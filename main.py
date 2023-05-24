@@ -1,6 +1,6 @@
 import matplotlib
 
-from fitness_plots import FitnessPlots
+from fitness_plots import FitnessPlots, TrackableVariable
 
 matplotlib.use('Qt5Agg')
 
@@ -99,7 +99,7 @@ class CirclesInASquare:
             self.fig.canvas.flush_events()
 
         if self.fitness_plots:
-            self.fitness_plots.add(report.generation, report.best_fitness)
+            self.fitness_plots.add(report)
 
     def get_target(self):
         values_to_reach = [
@@ -150,15 +150,39 @@ class CirclesInASquare:
 
         return best_solution
 
-    def run_parameterized_evolution_strategies(self):
-        for num_children in [1, 2, 3, 4]:
-            self.fitness_plots.set_subplot(f"Number of Children = {num_children}")
-            for max_age in [0, 1, 5, 1000]:
-                self.fitness_plots.set_line(f"Max Age = {max_age}")
-                self.run_evolution_strategies(generations = 10, num_children=num_children, max_age=max_age)
-        self.fitness_plots.show()
+def main():
+    """
+    Original main function
+    """
+    circles = 10
+    runner = CirclesInASquare(circles, plot_sols=True)
+    runner.run_evolution_strategies()
 
-if __name__ == "__main__":
+def experiment1():
+    """
+    Shows severals plots for the `num_children` and `max_age`
+    """
     circles = 10
     runner = CirclesInASquare(circles, plot_sols=False)
-    runner.run_parameterized_evolution_strategies()
+    for num_children in [1, 2, 3, 4]:
+        runner.fitness_plots.set_subplot(f"Number of Children = {num_children}")
+        for max_age in [0, 1, 5, 1000]:
+            runner.fitness_plots.set_line(f"Max Age = {max_age}")
+            runner.run_evolution_strategies(generations=1000, num_children=num_children, max_age=max_age)
+    runner.fitness_plots.show()
+
+def experiment2():
+    """
+    Shows severals plots for different `num_children` and `strategy`
+    """
+    circles = 10
+    runner = CirclesInASquare(circles, plot_sols=False)
+    for num_children in [1, 2, 3, 4]:
+        runner.fitness_plots.set_subplot(f"Number of Children = {num_children}")
+        for strategy in [Strategy.SINGLE_VARIANCE, Strategy.MULTIPLE_VARIANCE, Strategy.FULL_VARIANCE]:
+            runner.fitness_plots.set_line(strategy.name)
+            runner.run_evolution_strategies(generations=1000, num_children=num_children, max_age=5, strategy=strategy)
+    runner.fitness_plots.show()
+
+if __name__ == "__main__":
+    experiment1()
