@@ -11,6 +11,7 @@ from sklearn.metrics.pairwise import euclidean_distances
 import matplotlib.pyplot as plt
 import numpy as np
 
+
 ###########################################################
 #                                                         #
 # EvoPy framework from https://github.com/evopy/evopy     #
@@ -31,19 +32,20 @@ import numpy as np
 
 # np/scipy CiaS implementation is faster for higher problem dimensions, i.e, more than 11 or 12 circles.
 def circles_in_a_square_scipy(individual):
-   points = np.reshape(individual, (-1, 2))
-   dist = euclidean_distances(points)
-   np.fill_diagonal(dist, 1e10)
-   return np.min(dist)
+    points = np.reshape(individual, (-1, 2))
+    dist = euclidean_distances(points)
+    np.fill_diagonal(dist, 1e10)
+    return np.min(dist)
+
 
 # Pure python implementation is faster for lower problem dimensions
 def circles_in_a_square(individual):
     n = len(individual)
     distances = []
-    for i in range(0, n-1, 2):
+    for i in range(0, n - 1, 2):
         for j in range(i + 2, n, 2):
             distances.append(math.sqrt(math.pow((individual[i] - individual[j]), 2)
-                              + math.pow((individual[i + 1] - individual[j + 1]), 2)))
+                                       + math.pow((individual[i + 1] - individual[j + 1]), 2)))
     return min(distances)
 
 
@@ -79,10 +81,11 @@ class CirclesInASquare:
             print("Time Elapsed Generation Evaluations Best-fitness")
 
     def statistics_callback(self, report: ProgressReport):
-        formatted_time = str(report.time_elapsed).split(".")[0]+"s"
-        output = "{:>10s} {:>10d} {:>11d} {:>12.8f} {:>12.8f} {:>12.8f}".format(formatted_time, report.generation, report.evaluations,
-                                                                        report.best_fitness, report.avg_fitness,
-                                                                        report.std_fitness)
+        formatted_time = str(report.time_elapsed).split(".")[0] + "s"
+        output = "{:>10s} {:>10d} {:>11d} {:>12.8f} {:>12.8f} {:>12.8f}".format(formatted_time, report.generation,
+                                                                                report.evaluations,
+                                                                                report.best_fitness, report.avg_fitness,
+                                                                                report.std_fitness)
 
         if self.print_sols:
             output += " ({:s})".format(np.array2string(report.best_genotype))
@@ -126,7 +129,8 @@ class CirclesInASquare:
 
         return values_to_reach[self.n_circles - 2]
 
-    def run_evolution_strategies(self, generations = 1000, num_children = 1, max_age = 0, strategy = Strategy.SINGLE_VARIANCE):
+    def run_evolution_strategies(self, generations=1000, num_children=1, max_age=0, strategy=Strategy.SINGLE_VARIANCE,
+                                 population_size=30):
         callback = self.statistics_callback if self.output_statistics else None
 
         evopy = EvoPy(
@@ -135,6 +139,7 @@ class CirclesInASquare:
             reporter=callback,  # Prints statistics at each generation
             maximize=True,
             generations=generations,
+            population_size=population_size,
             bounds=(0, 1),
             target_fitness_value=self.get_target(),
             max_evaluations=1e5,
@@ -150,6 +155,7 @@ class CirclesInASquare:
 
         return best_solution
 
+
 def main():
     """
     Original main function
@@ -157,6 +163,7 @@ def main():
     circles = 10
     runner = CirclesInASquare(circles, plot_sols=True)
     runner.run_evolution_strategies()
+
 
 def experiment1():
     """
@@ -171,9 +178,10 @@ def experiment1():
             runner.run_evolution_strategies(generations=1000, num_children=num_children, max_age=max_age)
     runner.fitness_plots.show()
 
+
 def experiment2():
     """
-    Shows severals plots for different `num_children` and `strategy`
+    Shows several plots for different `num_children` and `strategy`
     """
     circles = 10
     runner = CirclesInASquare(circles, plot_sols=False)
@@ -184,5 +192,35 @@ def experiment2():
             runner.run_evolution_strategies(generations=1000, num_children=num_children, max_age=5, strategy=strategy)
     runner.fitness_plots.show()
 
+
+def experiment3():
+    """
+    Shows several plots for different `max_age` and `strategy`
+    """
+    circles = 10
+    runner = CirclesInASquare(circles, plot_sols=False)
+    for strategy in [Strategy.SINGLE_VARIANCE, Strategy.MULTIPLE_VARIANCE, Strategy.FULL_VARIANCE]:
+        runner.fitness_plots.set_subplot(strategy.name)
+        for max_age in [0, 1, 5, 1000]:
+            runner.fitness_plots.set_line(f"Max Age = {max_age}")
+            runner.run_evolution_strategies(generations=1000, num_children=2, max_age=max_age, strategy=strategy)
+    runner.fitness_plots.show()
+
+
+def experiment4():
+    """
+    Shows several plots for different `strategy` and `population_size`
+    """
+    circles = 10
+    runner = CirclesInASquare(circles, plot_sols=False)
+    for strategy in [Strategy.SINGLE_VARIANCE, Strategy.MULTIPLE_VARIANCE, Strategy.FULL_VARIANCE]:
+        runner.fitness_plots.set_subplot(strategy.name)
+        for population_size in [10, 30, 60, 100]:
+            runner.fitness_plots.set_line(f"Population size = {population_size}")
+            runner.run_evolution_strategies(generations=1000, num_children=1, max_age=1000, population_size=population_size,
+                                            strategy=strategy)
+    runner.fitness_plots.show()
+
+
 if __name__ == "__main__":
-    experiment1()
+    experiment4()
