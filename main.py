@@ -1,8 +1,11 @@
 import matplotlib
+
+from fitness_plots import FitnessPlots
+
 matplotlib.use('Qt5Agg')
 
 import math
-from evopy import EvoPy
+from evopy import EvoPy, Strategy
 from evopy import ProgressReport
 from sklearn.metrics.pairwise import euclidean_distances
 import matplotlib.pyplot as plt
@@ -60,6 +63,8 @@ class CirclesInASquare:
         if self.output_statistics:
             self.statistics_header()
 
+        self.fitness_plots = FitnessPlots()
+
     def set_up_plot(self):
         self.fig, self.ax = plt.subplots()
         self.ax.set_xlabel("$x_0$")
@@ -93,6 +98,9 @@ class CirclesInASquare:
             self.fig.canvas.draw()
             self.fig.canvas.flush_events()
 
+        if self.fitness_plots:
+            self.fitness_plots.add(report.generation, report.best_fitness)
+
     def get_target(self):
         values_to_reach = [
             1.414213562373095048801688724220,  # 2
@@ -118,7 +126,7 @@ class CirclesInASquare:
 
         return values_to_reach[self.n_circles - 2]
 
-    def run_evolution_strategies(self):
+    def run_evolution_strategies(self, generations = 1000, num_children = 1, max_age = 0, strategy = Strategy.SINGLE_VARIANCE):
         callback = self.statistics_callback if self.output_statistics else None
 
         evopy = EvoPy(
@@ -126,12 +134,13 @@ class CirclesInASquare:
             self.n_circles * 2,  # Number of parameters
             reporter=callback,  # Prints statistics at each generation
             maximize=True,
-            generations=1000,
+            generations=generations,
             bounds=(0, 1),
             target_fitness_value=self.get_target(),
             max_evaluations=1e5,
-            num_children=2,
-            max_age=3
+            num_children=num_children,
+            max_age=max_age,
+            strategy=strategy
         )
 
         best_solution = evopy.run()
@@ -141,8 +150,15 @@ class CirclesInASquare:
 
         return best_solution
 
+    def run_parameterized_evolution_strategies(self):
+        for num_children in [1, 2, 3, 4]:
+            self.fitness_plots.set_subplot(f"Number of Children = {num_children}")
+            for max_age in [0, 1, 5, 1000]:
+                self.fitness_plots.set_line(f"Max Age = {max_age}")
+                self.run_evolution_strategies(generations = 10, num_children=num_children, max_age=max_age)
+        self.fitness_plots.show()
 
 if __name__ == "__main__":
     circles = 10
-    runner = CirclesInASquare(circles, plot_sols=True)
-    best = runner.run_evolution_strategies()
+    runner = CirclesInASquare(circles, plot_sols=False)
+    runner.run_parameterized_evolution_strategies()
