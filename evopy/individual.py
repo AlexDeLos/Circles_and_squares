@@ -36,6 +36,7 @@ class Individual:
         self.bounds = bounds
         self.strategy = strategy
         self.strategy_parameters = strategy_parameters
+        self.age = 0
         if not isinstance(strategy, Strategy):
             raise ValueError("Provided strategy parameter was not an instance of Strategy.")
         if strategy == Strategy.SINGLE_VARIANCE and len(strategy_parameters) == 1:

@@ -16,7 +16,7 @@ class EvoPy:
                  population_size=30, num_children=1, mean=0, std=1, maximize=False,
                  strategy=Strategy.SINGLE_VARIANCE, random_seed=None, reporter=None,
                  target_fitness_value=None, target_tolerance=1e-5, max_run_time=None,
-                 max_evaluations=None, bounds=None):
+                 max_evaluations=None, bounds=None, max_age=0):
         """Initializes an EvoPy instance.
 
         :param fitness_function: the fitness function on which the individuals are evaluated
@@ -56,6 +56,7 @@ class EvoPy:
         self.max_run_time = max_run_time
         self.max_evaluations = max_evaluations
         self.bounds = bounds
+        self.max_age = max_age
         self.evaluations = 0
 
     def _check_early_stop(self, start_time, best):
@@ -90,7 +91,8 @@ class EvoPy:
         for generation in range(self.generations):
             children = [parent.reproduce() for _ in range(self.num_children)
                         for parent in population]
-            population = sorted(children, reverse=self.maximize,
+            population = self._age_population(population)
+            population = sorted(children+population, reverse=self.maximize,
                                 key=lambda individual: individual.evaluate(self.fitness_function))
             self.evaluations += len(population)
             population = population[:self.population_size]
@@ -99,12 +101,21 @@ class EvoPy:
             if self.reporter is not None:
                 mean = np.mean([x.fitness for x in population])
                 std = np.std([x.fitness for x in population])
-                self.reporter(ProgressReport(generation, self.evaluations, best.genotype, best.fitness, mean, std))
+                self.reporter(ProgressReport(generation, self.evaluations, best.genotype, best.fitness, mean, std, time.time() - start_time))
 
             if self._check_early_stop(start_time, best):
                 break
 
         return best.genotype
+
+    def _age_population(self, population):
+        """
+        Increases the age of individuals in the population by 1 and kills individuals that reached the maximum age and
+        """
+        population = list(filter(lambda i: i.age < self.max_age, population))
+        for individual in population:
+            individual.age += 1
+        return population
 
     def _init_population(self):
         if self.strategy == Strategy.SINGLE_VARIANCE:

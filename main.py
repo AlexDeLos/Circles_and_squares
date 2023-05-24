@@ -71,10 +71,11 @@ class CirclesInASquare:
         if self.print_sols:
             print("Generation Evaluations Best-fitness (Best individual..)")
         else:
-            print("Generation Evaluations Best-fitness")
+            print("Time Elapsed Generation Evaluations Best-fitness")
 
     def statistics_callback(self, report: ProgressReport):
-        output = "{:>10d} {:>11d} {:>12.8f} {:>12.8f} {:>12.8f}".format(report.generation, report.evaluations,
+        formatted_time = str(report.time_elapsed).split(".")[0]+"s"
+        output = "{:>10s} {:>10d} {:>11d} {:>12.8f} {:>12.8f} {:>12.8f}".format(formatted_time, report.generation, report.evaluations,
                                                                         report.best_fitness, report.avg_fitness,
                                                                         report.std_fitness)
 
@@ -129,6 +130,8 @@ class CirclesInASquare:
             bounds=(0, 1),
             target_fitness_value=self.get_target(),
             max_evaluations=1e5,
+            num_children=2,
+            max_age=3
         )
 
         best_solution = evopy.run()
