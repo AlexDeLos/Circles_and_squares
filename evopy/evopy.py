@@ -98,12 +98,14 @@ class EvoPy:
             population = population[:self.population_size]
             best = population[0]
 
+            should_stop = self._check_early_stop(start_time, best) or generation == self.generations - 1
+
             if self.reporter is not None:
                 mean = np.mean([x.fitness for x in population])
                 std = np.std([x.fitness for x in population])
-                self.reporter(ProgressReport(generation, self.evaluations, best.genotype, best.fitness, mean, std, time.time() - start_time))
+                self.reporter(ProgressReport(generation, self.evaluations, best.genotype, best.fitness, mean, std, time.time() - start_time, should_stop))
 
-            if self._check_early_stop(start_time, best):
+            if should_stop:
                 break
 
         return best.genotype

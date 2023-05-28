@@ -107,7 +107,7 @@ class CirclesInASquare:
             if self.plot_best_sol:
                 self.fig.canvas.draw()
                 self.fig.canvas.flush_events()
-            if self.save_sols and (report.generation == 0 or report.generation == self.evopy.generations):
+            if self.save_sols and (report.generation == 0 or report.is_final_report):
                 plt.savefig(f"results/{self.fitness_plots.get_current_state()}@Generation{report.generation}")
 
         self.add_to_fitness_plots(report)
@@ -143,6 +143,10 @@ class CirclesInASquare:
 
     def run_evolution_strategies(self, generations=1000, num_children=1, max_age=0, strategy=Strategy.SINGLE_VARIANCE,
                                  population_size=30, use_warm_start = True):
+        if self.plot_best_sol or self.save_sols:
+            #quick and dirty way to reset the plot when the same runner is reused with new parameters
+            self.set_up_plot()
+
         callback = self.statistics_callback
 
         best_solutions = []
@@ -309,7 +313,7 @@ def experiment6():
     Shows 2 plots comparing random initialization vs warm start initialization
     """
     circles = 10
-    runner = CirclesInASquare(circles, plot_sols=False, save_sols=True, number_of_runs=10)
+    runner = CirclesInASquare(circles, plot_sols=False, number_of_runs=10)
     for use_warm_start in [False, True]:
         if use_warm_start:
             runner.fitness_plots.set_subplot(f"Warm Start")
@@ -317,7 +321,7 @@ def experiment6():
             runner.fitness_plots.set_subplot(f"Random Initialization")
         for population_size in [50]:
             runner.fitness_plots.set_line(f"Population Size = {population_size}")
-            runner.run_evolution_strategies(generations=1000, num_children=4, max_age=1000, population_size=population_size,
+            runner.run_evolution_strategies(generations=100, num_children=4, max_age=1000, population_size=population_size,
                                             strategy=Strategy.SINGLE_VARIANCE, use_warm_start= use_warm_start)
     runner.fitness_plots.show()
 
