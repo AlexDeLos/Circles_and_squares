@@ -169,28 +169,28 @@ class CirclesInASquare:
         """
         Returns a set of positions in cordinates
         """
-        individual_length = self.n_circles * 2
-        n = int(populationSize**(1/individual_length)) # how many we can fit in each grid cleanly
-        # print(n)
-        space = 1/n
-        # print(space)
+        n = int(populationSize**(1/2)) # how many we can fit in each grid cleanly
         result = []
         fun = lambda x: int(x)/n
-        for el in range(n**individual_length):
+        for el in range(n**2):
             i = self.toBaseN(el,n) #turn it to base whatever
-            while len(i) < individual_length:
+            while len(i) < 2:
                 i.insert(0,'0')
             result.append(list(map(fun,i)))
 
-        
-            # print(result)
-
         # fill in the rest:
         while len(result) < populationSize:
-            result.append(np.random.uniform(size=individual_length))
+            result.append([np.random.uniform(),np.random.uniform()])
+        newResult = ([0] * 2) * populationSize
+        y = 0
+        # transform to the format they should be
+        for i in result:
+            newResult[y] = i[0]
+            newResult[y+10]= i[1]
+            y = y+1
         
         print(result)
-        return result
+        return newResult
 
 
 
@@ -282,4 +282,4 @@ def experiment5():
 
 
 if __name__ == "__main__":
-    experiment4()
+    experiment5()
