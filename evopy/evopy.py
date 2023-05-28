@@ -12,7 +12,7 @@ from evopy.utils import random_with_seed
 class EvoPy:
     """Main class of the EvoPy package."""
 
-    def __init__(self, fitness_function, individual_length, warm_start=[], generations=100,
+    def __init__(self, fitness_function, individual_length, warm_start=None, generations=100,
                  population_size=30, num_children=1, mean=0, std=1, maximize=False,
                  strategy=Strategy.SINGLE_VARIANCE, random_seed=None, reporter=None,
                  target_fitness_value=None, target_tolerance=1e-5, max_run_time=None,
@@ -127,10 +127,14 @@ class EvoPy:
                 int((self.individual_length + 1) * self.individual_length / 2))
         else:
             raise ValueError("Provided strategy parameter was not an instance of Strategy")
-        population_parameters = np.asarray([
-            self.warm_start[n] + self.random.normal(loc=self.warm_start[n], scale=self.std, size=self.individual_length)
-            for n in range(self.population_size)
-        ])
+
+        if self.warm_start is None:
+            population_parameters = np.asarray([
+                self.random.normal(loc=0, scale=self.std, size=self.individual_length)
+                for n in range(self.population_size)
+            ])
+        else:
+            population_parameters = self.warm_start
 
         # Make sure parameters are within bounds
         if self.bounds is not None:

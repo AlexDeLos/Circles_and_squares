@@ -51,16 +51,18 @@ def circles_in_a_square(individual):
 
 
 class CirclesInASquare:
-    def __init__(self, n_circles, output_statistics=False, plot_sols=False, print_sols=False, number_of_runs=1):
+    def __init__(self, n_circles, output_statistics=False, plot_sols=False, print_sols=False, save_sols=False, number_of_runs=1):
+        self.evopy = None
         self.print_sols = print_sols
         self.output_statistics = output_statistics
         self.plot_best_sol = plot_sols
+        self.save_sols = save_sols
         self.n_circles = n_circles
         self.fig = None
         self.ax = None
         assert 2 <= n_circles <= 20
 
-        if self.plot_best_sol:
+        if self.plot_best_sol or self.save_sols:
             self.set_up_plot()
 
         if self.output_statistics:
@@ -74,7 +76,8 @@ class CirclesInASquare:
         self.ax.set_xlabel("$x_0$")
         self.ax.set_ylabel("$x_1$")
         self.ax.set_title("Best solution in generation 0")
-        self.fig.show()
+        if self.plot_best_sol:
+            self.fig.show()
 
     def statistics_header(self):
         if self.print_sols:
@@ -83,25 +86,29 @@ class CirclesInASquare:
             print("Time Elapsed Generation Evaluations Best-fitness")
 
     def statistics_callback(self, report: ProgressReport):
-        formatted_time = str(report.time_elapsed).split(".")[0] + "s"
-        output = "{:>10s} {:>10d} {:>11d} {:>12.8f} {:>12.8f} {:>12.8f}".format(formatted_time, report.generation,
-                                                                                report.evaluations,
-                                                                                report.best_fitness, report.avg_fitness,
-                                                                                report.std_fitness)
+        if self.output_statistics:
+            formatted_time = str(report.time_elapsed).split(".")[0] + "s"
+            output = "{:>10s} {:>10d} {:>11d} {:>12.8f} {:>12.8f} {:>12.8f}".format(formatted_time, report.generation,
+                                                                                    report.evaluations,
+                                                                                    report.best_fitness, report.avg_fitness,
+                                                                                    report.std_fitness)
 
-        if self.print_sols:
-            output += " ({:s})".format(np.array2string(report.best_genotype))
-        print(output)
+            if self.print_sols:
+                output += " ({:s})".format(np.array2string(report.best_genotype))
+            print(output)
 
-        if self.plot_best_sol:
+        if self.plot_best_sol or self.save_sols:
             points = np.reshape(report.best_genotype, (-1, 2))
             self.ax.clear()
             self.ax.scatter(points[:, 0], points[:, 1], clip_on=False, color="black")
             self.ax.set_xlim((0, 1))
             self.ax.set_ylim((0, 1))
             self.ax.set_title("Best solution in generation {:d}".format(report.generation))
-            self.fig.canvas.draw()
-            self.fig.canvas.flush_events()
+            if self.plot_best_sol:
+                self.fig.canvas.draw()
+                self.fig.canvas.flush_events()
+            if self.save_sols and (report.generation == 0 or report.generation == self.evopy.generations):
+                plt.savefig(f"results/{self.fitness_plots.get_current_state()}@Generation{report.generation}")
 
         self.add_to_fitness_plots(report)
 
@@ -136,14 +143,14 @@ class CirclesInASquare:
 
     def run_evolution_strategies(self, generations=1000, num_children=1, max_age=0, strategy=Strategy.SINGLE_VARIANCE,
                                  population_size=30, use_warm_start = True):
-        callback = self.statistics_callback if self.output_statistics else self.add_to_fitness_plots
+        callback = self.statistics_callback
 
         best_solutions = []
 
         for current_run in range(self.number_of_runs):
             self.fitness_plots.set_run(current_run)
 
-            evopy = EvoPy(
+            self.evopy = EvoPy(
                 circles_in_a_square if self.n_circles < 12 else circles_in_a_square_scipy,  # Fitness function
                 self.n_circles * 2,  # Number of parameters
                 reporter=callback,  # Prints statistics at each generation
@@ -156,14 +163,13 @@ class CirclesInASquare:
                 num_children=num_children,
                 max_age=max_age,
                 strategy=strategy,
-                warm_start = self.getWarmStart(populationSize=population_size) if use_warm_start else ([0] * self.n_circles * 2) * population_size
+                warm_start = self.getWarmStart(population_size) if use_warm_start else None
             )
 
-            best_solutions.append(evopy.run())
+            best_solutions.append(self.evopy.run())
 
-            if self.plot_best_sol:
-                #plt.savefig("Result")
-                plt.close()
+        if self.plot_best_sol or self.save_sols:
+            plt.close()
 
         if len(best_solutions) == 1:
             return best_solutions[0]
@@ -177,13 +183,19 @@ class CirclesInASquare:
             x = int((x -newD)/base)
         return newNumber
 
-    def getWarmStart(self, populationSize):
+    def getWarmStart(self, population_size):
         """
         Returns a set of positions in cordinates
         """
-        n = int(populationSize**(1/2)) # how many we can fit in each grid cleanly
+        return np.asarray([
+            self.getWarmStartIndividual()
+            for _ in range(population_size)
+        ])
+
+    def getWarmStartIndividual(self):
+        n = int(self.n_circles**(1/2)) # how many we can fit in each grid cleanly
         result = []
-        fun = lambda x: int(x)/n
+        fun = lambda x: int(x)/(n-1)
         for el in range(n**2):
             i = self.toBaseN(el,n) #turn it to base whatever
             while len(i) < 2:
@@ -191,20 +203,17 @@ class CirclesInASquare:
             result.append(list(map(fun,i)))
 
         # fill in the rest:
-        while len(result) < populationSize:
+        while len(result) < self.n_circles:
             result.append([np.random.uniform(),np.random.uniform()])
-        newResult = ([0] * 2) * populationSize
-        y = 0
+
         # transform to the format they should be
-        for i in result:
-            newResult[y] = i[0]
-            newResult[y+10]= i[1]
-            y = y+1
-        
-        print(result)
-        return newResult
+        result = sum(result, [])
 
+        # add random noise to it
+        result = result + np.random.normal(loc=0, scale=1/(10*(n-1)), size=self.n_circles*2)
+        result = np.clip(result, 0, 1)
 
+        return result
 
 
 
@@ -214,7 +223,7 @@ def main():
     """
     circles = 10
     runner = CirclesInASquare(circles, plot_sols=True, output_statistics=True)
-    runner.run_evolution_strategies()
+    runner.run_evolution_strategies(generations=1000, max_age=1000, num_children=4)
 
 def fitness_plots_from_backup():
     circles = 10
@@ -300,7 +309,7 @@ def experiment6():
     Shows 2 plots comparing random initialization vs warm start initialization
     """
     circles = 10
-    runner = CirclesInASquare(circles, plot_sols=False, number_of_runs=10)
+    runner = CirclesInASquare(circles, plot_sols=False, save_sols=True, number_of_runs=10)
     for use_warm_start in [False, True]:
         if use_warm_start:
             runner.fitness_plots.set_subplot(f"Warm Start")
@@ -308,10 +317,10 @@ def experiment6():
             runner.fitness_plots.set_subplot(f"Random Initialization")
         for population_size in [50]:
             runner.fitness_plots.set_line(f"Population Size = {population_size}")
-            runner.run_evolution_strategies(generations=2, num_children=1, max_age=1000, population_size=population_size,
+            runner.run_evolution_strategies(generations=1000, num_children=4, max_age=1000, population_size=population_size,
                                             strategy=Strategy.SINGLE_VARIANCE, use_warm_start= use_warm_start)
     runner.fitness_plots.show()
 
 
 if __name__ == "__main__":
-    experiment5()
+    experiment6()

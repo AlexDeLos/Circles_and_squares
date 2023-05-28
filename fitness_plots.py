@@ -50,6 +50,9 @@ class FitnessPlots:
             fitness_plots = pickle.load(f)
         return fitness_plots
 
+    def get_current_state(self):
+        return f"{self.current_subplot}@{self.current_line}@Run{self.current_run}"
+
     def print_current_state(self):
         print(30*"-")
         print(f"Run {self.current_run+1}/{self.number_of_runs}:")
@@ -179,8 +182,8 @@ class FitnessPlots:
                                    yerr = self.ys_std[subplot_name][line_name],
                                    label=line_name, color=colors[line_name])
                     subax.legend() #legend per subplot
-                    y_min = min(y_min, self.ys_mean[subplot_name][line_name].min())
-                    y_max = max(y_max, self.ys_mean[subplot_name][line_name].max())
+                    y_min = min(y_min, self.ys[subplot_name][line_name].min())
+                    y_max = max(y_max, self.ys[subplot_name][line_name].max())
         plt.legend() #1 legend for all subplots
         plt.setp(ax, ylim=[y_min, y_max])
         plt.show()
