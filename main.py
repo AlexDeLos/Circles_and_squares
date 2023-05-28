@@ -294,7 +294,7 @@ def experiment6():
     Shows 2 plots comparing random initialization vs warm start initialization
     """
     circles = 10
-    runner = CirclesInASquare(circles, plot_sols=False, number_of_runs=1)
+    runner = CirclesInASquare(circles, plot_sols=False, number_of_runs=10)
     for use_warm_start in [False, True]:
         if use_warm_start:
             runner.fitness_plots.set_subplot(f"Warm Start")
@@ -308,4 +308,4 @@ def experiment6():
 
 
 if __name__ == "__main__":
-    main()
+    experiment6()
