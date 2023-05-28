@@ -1,4 +1,5 @@
 import matplotlib
+# import random
 
 from fitness_plots import FitnessPlots, TrackableVariable
 
@@ -130,12 +131,12 @@ class CirclesInASquare:
         return values_to_reach[self.n_circles - 2]
 
     def run_evolution_strategies(self, generations=1000, num_children=1, max_age=0, strategy=Strategy.SINGLE_VARIANCE,
-                                 population_size=30):
+                                 population_size=30, warmStart = None):
         callback = self.statistics_callback if self.output_statistics else None
 
         evopy = EvoPy(
             circles_in_a_square if self.n_circles < 12 else circles_in_a_square_scipy,  # Fitness function
-            self.n_circles * 2,  # Number of parameters
+            self.n_circles * 2,  # Number of parameters -> indivisulas.length
             reporter=callback,  # Prints statistics at each generation
             maximize=True,
             generations=generations,
@@ -145,7 +146,8 @@ class CirclesInASquare:
             max_evaluations=1e5,
             num_children=num_children,
             max_age=max_age,
-            strategy=strategy
+            strategy=strategy,
+            warm_start= ([0] * self.n_circles * 2) *population_size if (warmStart is None) else self.getWarmStart(populationSize=population_size)
         )
 
         best_solution = evopy.run()
@@ -154,6 +156,44 @@ class CirclesInASquare:
             plt.close()
 
         return best_solution
+    
+    def toBaseN(self, x:int, base:int):
+        newNumber = []
+        while not x == 0:
+            newD = x%base
+            newNumber.insert(0,newD)
+            x = int((x -newD)/base)
+        return newNumber    
+        
+    def getWarmStart(self, populationSize):
+        """
+        Returns a set of positions in cordinates
+        """
+        individual_length = self.n_circles * 2
+        n = int(populationSize**(1/individual_length)) # how many we can fit in each grid cleanly
+        # print(n)
+        space = 1/n
+        # print(space)
+        result = []
+        fun = lambda x: int(x)/n
+        for el in range(n**individual_length):
+            i = self.toBaseN(el,n) #turn it to base whatever
+            while len(i) < individual_length:
+                i.insert(0,'0')
+            result.append(list(map(fun,i)))
+
+        
+            # print(result)
+
+        # fill in the rest:
+        while len(result) < populationSize:
+            result.append(np.random.uniform(size=individual_length))
+        
+        print(result)
+        return result
+
+
+
 
 
 def main():
@@ -219,6 +259,25 @@ def experiment4():
             runner.fitness_plots.set_line(f"Population size = {population_size}")
             runner.run_evolution_strategies(generations=1000, num_children=1, max_age=1000, population_size=population_size,
                                             strategy=strategy)
+    runner.fitness_plots.show()
+
+
+
+
+
+
+def experiment5():
+    """
+    Shows plot for a non random initialization
+    """
+    circles = 10
+    runner = CirclesInASquare(circles, plot_sols=False)
+    for strategy in [Strategy.SINGLE_VARIANCE, Strategy.MULTIPLE_VARIANCE, Strategy.FULL_VARIANCE]:
+        runner.fitness_plots.set_subplot(strategy.name)
+        for population_size in [10, 30, 60, 100]:
+            runner.fitness_plots.set_line(f"Population size = {population_size}")
+            runner.run_evolution_strategies(generations=1000, num_children=1, max_age=1000, population_size=population_size,
+                                            strategy=strategy,warmStart= 1)
     runner.fitness_plots.show()
 
 
