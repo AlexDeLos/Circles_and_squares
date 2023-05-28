@@ -103,7 +103,7 @@ class CirclesInASquare:
             self.ax.scatter(points[:, 0], points[:, 1], clip_on=False, color="black")
             self.ax.set_xlim((0, 1))
             self.ax.set_ylim((0, 1))
-            self.ax.set_title("Best solution in generation {:d}".format(report.generation))
+            self.ax.set_title(f"Best solution in generation {report.generation} (Fitness {report.best_fitness})")
             if self.plot_best_sol:
                 self.fig.canvas.draw()
                 self.fig.canvas.flush_events()
@@ -142,7 +142,7 @@ class CirclesInASquare:
         return values_to_reach[self.n_circles - 2]
 
     def run_evolution_strategies(self, generations=1000, num_children=1, max_age=0, strategy=Strategy.SINGLE_VARIANCE,
-                                 population_size=30, use_warm_start = True):
+                                 population_size=30, max_evaluations=1e5, use_warm_start = True):
         if self.plot_best_sol or self.save_sols:
             #quick and dirty way to reset the plot when the same runner is reused with new parameters
             self.set_up_plot()
@@ -163,7 +163,7 @@ class CirclesInASquare:
                 population_size=population_size,
                 bounds=(0, 1),
                 target_fitness_value=self.get_target(),
-                max_evaluations=1e5,
+                max_evaluations=max_evaluations,
                 num_children=num_children,
                 max_age=max_age,
                 strategy=strategy,
@@ -229,11 +229,11 @@ def main():
     runner = CirclesInASquare(circles, plot_sols=True, output_statistics=True)
     runner.run_evolution_strategies(generations=1000, max_age=1000, num_children=4)
 
-def fitness_plots_from_backup():
+def fitness_plots_from_backup(number_of_error_bars=float("inf")):
     circles = 10
     runner = CirclesInASquare(circles)
     runner.fitness_plots = FitnessPlots.from_backup()
-    runner.fitness_plots.show()
+    runner.fitness_plots.show(number_of_error_bars=number_of_error_bars)
 
 def experiment1():
     """
@@ -312,8 +312,8 @@ def experiment6():
     """
     Shows 2 plots comparing random initialization vs warm start initialization
     """
-    circles = 10
-    runner = CirclesInASquare(circles, plot_sols=False, number_of_runs=10)
+    circles = 9
+    runner = CirclesInASquare(circles, plot_sols=False, save_sols=True, number_of_runs=10)
     for use_warm_start in [False, True]:
         if use_warm_start:
             runner.fitness_plots.set_subplot(f"Warm Start")
@@ -321,10 +321,11 @@ def experiment6():
             runner.fitness_plots.set_subplot(f"Random Initialization")
         for population_size in [50]:
             runner.fitness_plots.set_line(f"Population Size = {population_size}")
-            runner.run_evolution_strategies(generations=100, num_children=4, max_age=1000, population_size=population_size,
+            runner.run_evolution_strategies(generations=1000000, num_children=4, max_age=1000000, population_size=population_size,
                                             strategy=Strategy.SINGLE_VARIANCE, use_warm_start= use_warm_start)
     runner.fitness_plots.show()
 
 
 if __name__ == "__main__":
+    # NOTE: locally create an empty "results" folder in the root of the repo
     experiment6()

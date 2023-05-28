@@ -140,8 +140,9 @@ class EvoPy:
 
         # Make sure parameters are within bounds
         if self.bounds is not None:
-            oob_indices = (population_parameters < self.bounds[0]) | (population_parameters > self.bounds[1])
-            population_parameters[oob_indices] = self.random.uniform(self.bounds[0], self.bounds[1], size=np.count_nonzero(oob_indices))
+            population_parameters = np.clip(population_parameters, self.bounds[0], self.bounds[1])
+            #oob_indices = (population_parameters < self.bounds[0]) | (population_parameters > self.bounds[1])
+            #population_parameters[oob_indices] = self.random.uniform(self.bounds[0], self.bounds[1], size=np.count_nonzero(oob_indices))
 
         return [
             Individual(

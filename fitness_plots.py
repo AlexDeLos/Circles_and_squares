@@ -148,12 +148,27 @@ class FitnessPlots:
                 if np.any(self.xs_std[subplot_name][line_name] > 0):
                     print(f"WARNING: Deviation on x-axis detected for {subplot_name} and {line_name}")
 
-    def show(self, filename=BACKUP_FILENAME):
+    def set_number_of_error_bars(self, number_of_error_bars):
+        """
+        Thin out the places where the std is greater than 0
+        """
+        for subplot_name in set(self.ys_std.keys()):
+            for line_name in set(self.ys_std[subplot_name].keys()):
+                total_bars = self.ys_std[subplot_name][line_name].shape[0]
+                interval = max(1, total_bars//number_of_error_bars)
+                indices = np.where([n%interval != 0 for n in range(total_bars)])
+                self.xs_std[subplot_name][line_name][indices] = 0
+                self.ys_std[subplot_name][line_name][indices] = 0
+
+
+
+    def show(self, filename=BACKUP_FILENAME, number_of_error_bars=float("inf")):
         """
         Shows all subplots in a square layout
         """
         self.clean()
         self.calculate_mean_and_std()
+        self.set_number_of_error_bars(number_of_error_bars)
         rows = int(len(self.ys) ** (1 / 2))
         columns = ceil(len(self.ys) / rows)
         fig, ax = plt.subplots(rows, columns)
