@@ -51,7 +51,7 @@ def circles_in_a_square(individual):
 
 
 class CirclesInASquare:
-    def __init__(self, n_circles, output_statistics=True, plot_sols=False, print_sols=False):
+    def __init__(self, n_circles, output_statistics=False, plot_sols=False, print_sols=False, number_of_runs=1):
         self.print_sols = print_sols
         self.output_statistics = output_statistics
         self.plot_best_sol = plot_sols
@@ -66,7 +66,8 @@ class CirclesInASquare:
         if self.output_statistics:
             self.statistics_header()
 
-        self.fitness_plots = FitnessPlots()
+        self.number_of_runs = number_of_runs
+        self.fitness_plots = FitnessPlots(number_of_runs)
 
     def set_up_plot(self):
         self.fig, self.ax = plt.subplots()
@@ -102,6 +103,9 @@ class CirclesInASquare:
             self.fig.canvas.draw()
             self.fig.canvas.flush_events()
 
+        self.add_to_fitness_plots(report)
+
+    def add_to_fitness_plots(self, report: ProgressReport):
         if self.fitness_plots:
             self.fitness_plots.add(report)
 
@@ -131,40 +135,48 @@ class CirclesInASquare:
         return values_to_reach[self.n_circles - 2]
 
     def run_evolution_strategies(self, generations=1000, num_children=1, max_age=0, strategy=Strategy.SINGLE_VARIANCE,
-                                 population_size=30, warmStart = None):
-        callback = self.statistics_callback if self.output_statistics else None
+                                 population_size=30, use_warm_start = True):
+        callback = self.statistics_callback if self.output_statistics else self.add_to_fitness_plots
 
-        evopy = EvoPy(
-            circles_in_a_square if self.n_circles < 12 else circles_in_a_square_scipy,  # Fitness function
-            self.n_circles * 2,  # Number of parameters -> indivisulas.length
-            reporter=callback,  # Prints statistics at each generation
-            maximize=True,
-            generations=generations,
-            population_size=population_size,
-            bounds=(0, 1),
-            target_fitness_value=self.get_target(),
-            max_evaluations=1e5,
-            num_children=num_children,
-            max_age=max_age,
-            strategy=strategy,
-            warm_start= ([0] * self.n_circles * 2) *population_size if (warmStart is None) else self.getWarmStart(populationSize=population_size)
-        )
+        best_solutions = []
 
-        best_solution = evopy.run()
+        for current_run in range(self.number_of_runs):
+            self.fitness_plots.set_run(current_run)
 
-        if self.plot_best_sol:
-            plt.close()
+            evopy = EvoPy(
+                circles_in_a_square if self.n_circles < 12 else circles_in_a_square_scipy,  # Fitness function
+                self.n_circles * 2,  # Number of parameters
+                reporter=callback,  # Prints statistics at each generation
+                maximize=True,
+                generations=generations,
+                population_size=population_size,
+                bounds=(0, 1),
+                target_fitness_value=self.get_target(),
+                max_evaluations=1e5,
+                num_children=num_children,
+                max_age=max_age,
+                strategy=strategy,
+                warm_start = self.getWarmStart(populationSize=population_size) if use_warm_start else ([0] * self.n_circles * 2) * population_size
+            )
 
-        return best_solution
-    
+            best_solutions.append(evopy.run())
+
+            if self.plot_best_sol:
+                #plt.savefig("Result")
+                plt.close()
+
+        if len(best_solutions) == 1:
+            return best_solutions[0]
+        return best_solutions
+
     def toBaseN(self, x:int, base:int):
         newNumber = []
         while not x == 0:
             newD = x%base
             newNumber.insert(0,newD)
             x = int((x -newD)/base)
-        return newNumber    
-        
+        return newNumber
+
     def getWarmStart(self, populationSize):
         """
         Returns a set of positions in cordinates
@@ -201,16 +213,21 @@ def main():
     Original main function
     """
     circles = 10
-    runner = CirclesInASquare(circles, plot_sols=True)
+    runner = CirclesInASquare(circles, plot_sols=True, output_statistics=True)
     runner.run_evolution_strategies()
 
+def fitness_plots_from_backup():
+    circles = 10
+    runner = CirclesInASquare(circles)
+    runner.fitness_plots = FitnessPlots.from_backup()
+    runner.fitness_plots.show()
 
 def experiment1():
     """
     Shows severals plots for the `num_children` and `max_age`
     """
     circles = 10
-    runner = CirclesInASquare(circles, plot_sols=False)
+    runner = CirclesInASquare(circles, plot_sols=False, number_of_runs=10)
     for num_children in [1, 2, 3, 4]:
         runner.fitness_plots.set_subplot(f"Number of Children = {num_children}")
         for max_age in [0, 1, 5, 1000]:
@@ -263,21 +280,36 @@ def experiment4():
 
 
 
-
-
-
 def experiment5():
     """
     Shows plot for a non random initialization
     """
     circles = 10
-    runner = CirclesInASquare(circles, plot_sols=False)
+    runner = CirclesInASquare(circles, plot_sols=False, number_of_runs=10)
     for strategy in [Strategy.SINGLE_VARIANCE, Strategy.MULTIPLE_VARIANCE, Strategy.FULL_VARIANCE]:
         runner.fitness_plots.set_subplot(strategy.name)
         for population_size in [10, 30, 60, 100]:
             runner.fitness_plots.set_line(f"Population size = {population_size}")
             runner.run_evolution_strategies(generations=1000, num_children=1, max_age=1000, population_size=population_size,
-                                            strategy=strategy,warmStart= 1)
+                                            strategy=strategy, use_warm_start = True)
+    runner.fitness_plots.show()
+
+
+def experiment6():
+    """
+    Shows 2 plots comparing random initialization vs warm start initialization
+    """
+    circles = 10
+    runner = CirclesInASquare(circles, plot_sols=False, number_of_runs=10)
+    for use_warm_start in [False, True]:
+        if use_warm_start:
+            runner.fitness_plots.set_subplot(f"Warm Start")
+        else:
+            runner.fitness_plots.set_subplot(f"Random Initialization")
+        for population_size in [50]:
+            runner.fitness_plots.set_line(f"Population Size = {population_size}")
+            runner.run_evolution_strategies(generations=2, num_children=1, max_age=1000, population_size=population_size,
+                                            strategy=Strategy.SINGLE_VARIANCE, use_warm_start= use_warm_start)
     runner.fitness_plots.show()
 
 
