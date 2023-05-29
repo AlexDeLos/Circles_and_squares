@@ -3,6 +3,7 @@ import numpy as np
 
 from evopy.strategy import Strategy
 from evopy.utils import random_with_seed
+from forces import calculate_forces
 
 
 class Individual:
@@ -19,7 +20,7 @@ class Individual:
     _BETA = 0.0873
     _EPSILON = 0.01
 
-    def __init__(self, genotype, strategy, strategy_parameters, bounds=None, random_seed=None):
+    def __init__(self, genotype, strategy, strategy_parameters, bounds=None, random_seed=None, force_strength=0):
         """Initialize the Individual.
 
         :param genotype: the genotype of the individual
@@ -48,6 +49,7 @@ class Individual:
             self.reproduce = self._reproduce_full_variance
         else:
             raise ValueError("The length of the strategy parameters was not correct.")
+        self.force_strength = force_strength
 
     def evaluate(self, fitness_function):
         """Evaluate the genotype of the individual using the provided fitness function.
@@ -59,6 +61,22 @@ class Individual:
 
         return self.fitness
 
+    def _distribution_mean(self):
+        """
+        Shifts the genotype according to forces
+        :return: mean of the sample distribution
+        """
+        probability_to_apply_forces = 0.2
+        mean = self.genotype
+        if self.force_strength > 0:
+            apply_forces = self.random.choice([True, False], size=self.length//2, p = [probability_to_apply_forces, 1-probability_to_apply_forces])
+            if any(apply_forces):
+                indices = np.zeros(self.length, dtype=np.bool)
+                indices[0::2] = apply_forces
+                indices[1::2] = apply_forces
+                mean[indices] = mean[indices] + calculate_forces(self.genotype[indices], self.force_strength)
+        return mean
+
     def _reproduce_single_variance(self):
         """Create a single offspring individual from the set genotype and strategy parameters.
 
@@ -66,7 +84,7 @@ class Individual:
 
         :return: an individual which is the offspring of the current instance
         """
-        new_genotype = self.genotype + self.strategy_parameters[0] * self.random.randn(self.length)
+        new_genotype = self._distribution_mean() + self.strategy_parameters[0] * self.random.randn(self.length)
         # Randomly sample out of bounds indices
         oob_indices = (new_genotype < self.bounds[0]) | (new_genotype > self.bounds[1])
         new_genotype[oob_indices] = self.random.uniform(self.bounds[0], self.bounds[1], size=np.count_nonzero(oob_indices))
