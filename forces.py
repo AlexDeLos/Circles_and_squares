@@ -1,10 +1,14 @@
 import numpy as np
 from matplotlib import pyplot as plt
-from sklearn.metrics.pairwise import euclidean_distances, pairwise_distances, manhattan_distances
+from sklearn.metrics.pairwise import euclidean_distances
 from sklearn.preprocessing import normalize
 
 SAFE_DIVISION_EPSILON = 1e-8
-def calculate_forces(genotype, strength=0.00000005):
+
+def calculate_forces_full(genotype, strength=0.00000005):
+    """
+    Calculate forces by considering all neighbours
+    """
     if strength <= 0:
         return np.zeros(genotype.shape)
     points = np.reshape(genotype, (-1, 2))
@@ -14,8 +18,32 @@ def calculate_forces(genotype, strength=0.00000005):
     weights = normalize(1/distances)
     return np.einsum('ijk,ij->ik', differences, weights).flatten()
 
-def plot_forces(genotype, strength=0.00000005):
+def calculate_forces(genotype, strength=0.25):
+    """
+    Calculate forces by only considering the closest neighbours
+    """
+    if strength <= 0:
+        return np.zeros(genotype.shape)
+    points = np.reshape(genotype, (-1, 2))
+    distances = euclidean_distances(points, squared=True)
+    np.fill_diagonal(distances, 10)
+    closest_neighbours = np.argmin(distances, axis=-1)
+    weights = 1/(distances[tuple(zip(*enumerate(closest_neighbours)))] + SAFE_DIVISION_EPSILON)
+    return strength*weights[:, np.newaxis] * (points - points[closest_neighbours])
+
+def plot_forces(genotype, strength=0.25):
     points = np.reshape(genotype, (-1, 2))
     forces = np.reshape(calculate_forces(genotype, strength=strength), (-1, 2))
     for p0, p1, f0, f1 in zip(points[:, 0], points[:, 1], forces[:, 0], forces[:, 1]):
-        plt.arrow(p0, p1, f0, f1, head_width=0.01, head_length=0.02, fc='k', ec='k')
+        plt.arrow(p0, p1, f0, f1, head_width=0.02, head_length=0.02, fc='k', ec='k')
+
+if __name__ == "__main__":
+    arr = np.array([
+        0.4,   0,
+        0,      0.5,
+        1.1,    0,
+        1,      0.95
+    ])
+    plot_forces(arr)
+    plt.scatter(arr[0:len(arr):2], arr[1:len(arr):2])
+    plt.show()

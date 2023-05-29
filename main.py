@@ -64,8 +64,8 @@ class CirclesInASquare:
         self.ax = None
         assert 2 <= n_circles <= 20
 
-        if self.plot_best_sol or self.save_sols:
-            self.set_up_plot()
+        # if self.plot_best_sol or self.save_sols:
+        #     self.set_up_plot()
 
         if self.output_statistics:
             self.statistics_header()
@@ -143,7 +143,7 @@ class CirclesInASquare:
             0.286611652351681559449894454738
         ]
 
-        return values_to_reach[self.n_circles - 2]
+        return 100 #values_to_reach[self.n_circles - 2]
 
     def run_evolution_strategies(self, generations=1000, num_children=1, max_age=0, strategy=Strategy.SINGLE_VARIANCE,
                                  population_size=30, max_evaluations=1e5, use_warm_start = True, force_strength=0):
@@ -234,7 +234,7 @@ def main():
     """
     circles = 10
     runner = CirclesInASquare(circles, plot_sols=True, output_statistics=True)
-    runner.run_evolution_strategies(generations=1000, max_age=1000, num_children=4)
+    runner.run_evolution_strategies(generations=1000, max_age=1000, num_children=4, force_strength=0.01)
 
 def fitness_plots_from_backup(number_of_error_bars=float("inf")):
     circles = 10
@@ -358,7 +358,7 @@ def experiment8():
     runner = CirclesInASquare(circles, plot_sols=False, save_sols=True, number_of_runs=10)
     for force_strength in [0.01, 0.0001, 0]:
         runner.fitness_plots.set_subplot(f"Force Strength = {str(force_strength)}")
-        for use_warm_start in [False, True]:
+        for use_warm_start in [True]:
             if use_warm_start:
                 runner.fitness_plots.set_line(f"Warm Start")
             else:
@@ -371,4 +371,4 @@ def experiment8():
 
 if __name__ == "__main__":
     # NOTE: locally create an empty "results" folder in the root of the repo
-    experiment8()
+    main()
