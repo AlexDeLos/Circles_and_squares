@@ -67,19 +67,22 @@ class Individual:
         Shifts the genotype according to forces
         :return: mean of the sample distribution
         """
-        #todo: mutate the parameters 'probability_to_apply_forces' and 'force_strength' (single_variance style, but for means)
+        #todo: add a 'probability_to_apply_forces' parameter
+        #todo: mutate the 'force_strength' parameter (single_variance style, but for means)
         #todo: turn force parameters into a (self.length//2)-dim array, 1 per circle. (multiple_variance style, but for means)
 
-        probability_to_apply_forces = 0.2
+        #please rework this:
+        #probability_to_apply_forces = 0.2
+        # apply_forces = self.random.choice([True, False], size=self.length//2, p = [probability_to_apply_forces, 1-probability_to_apply_forces])
+        # if any(apply_forces):
+        #     indices = np.zeros(self.length, dtype=np.bool)
+        #     indices[0::2] = apply_forces
+        #     indices[1::2] = apply_forces
+        #     mean[indices] = mean[indices] + calculate_forces(self.genotype[indices], self.force_strength).flatten()
 
         mean = self.genotype
         if self.force_strength > 0:
-            apply_forces = self.random.choice([True, False], size=self.length//2, p = [probability_to_apply_forces, 1-probability_to_apply_forces])
-            if any(apply_forces):
-                indices = np.zeros(self.length, dtype=np.bool)
-                indices[0::2] = apply_forces
-                indices[1::2] = apply_forces
-                mean[indices] = mean[indices] + calculate_forces(self.genotype[indices], self.force_strength)
+            return mean + calculate_forces(self.genotype, self.force_strength).flatten()
         return mean
 
     def _handle_oob_indices(self, new_genotype):
@@ -96,7 +99,7 @@ class Individual:
 
         :return: an individual which is the offspring of the current instance
         """
-        new_genotype = self.genotype + self.strategy_parameters[0] * self.random.randn(self.length)
+        new_genotype = self._distribution_mean() + self.strategy_parameters[0] * self.random.randn(self.length)
         scale_factor = self.random.randn() * np.sqrt(1 / (2 * self.length))
         new_parameters = [max(self.strategy_parameters[0] * np.exp(scale_factor), self._EPSILON)]
         new_genotype = self._handle_oob_indices(new_genotype)
@@ -109,7 +112,7 @@ class Individual:
 
         :return: an individual which is the offspring of the current instance
         """
-        new_genotype = self.genotype + [self.strategy_parameters[i] * self.random.randn()
+        new_genotype = self._distribution_mean() + [self.strategy_parameters[i] * self.random.randn()
                                         for i in range(self.length)]
         global_scale_factor = self.random.randn() * np.sqrt(1 / (2 * self.length))
         scale_factors = [self.random.randn() * np.sqrt(1 / 2 * np.sqrt(self.length))
