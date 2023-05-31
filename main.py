@@ -167,7 +167,7 @@ class CirclesInASquare:
                 num_children=num_children,
                 max_age=max_age,
                 strategy=strategy,
-                warm_start = self.getWarmStart(population_size) if use_warm_start else None
+                warm_start=self.get_warm_start(population_size) if use_warm_start else None
             )
 
             best_solutions.append(self.evopy.run())
@@ -187,16 +187,16 @@ class CirclesInASquare:
             x = int((x -newD)/base)
         return newNumber
 
-    def getWarmStart(self, population_size):
+    def get_warm_start(self, population_size):
         """
         Returns a set of positions in cordinates
         """
         return np.asarray([
-            self.getWarmStartIndividual()
+            self.get_warm_start_individual() if self.n_circles < 6 else self.get_warm_start_individual_honey_comb()
             for _ in range(population_size)
         ])
 
-    def getWarmStartIndividual(self):
+    def get_warm_start_individual(self):
         n = int(self.n_circles**(1/2)) # how many we can fit in each grid cleanly
         result = []
         fun = lambda x: int(x)/(n-1)
@@ -219,6 +219,33 @@ class CirclesInASquare:
 
         return result
 
+    def get_warm_start_individual_honey_comb(self):
+        num_columns = math.floor(self.n_circles ** 0.5)
+        # The `ceil` here ensures there is always enough room for all the points,
+        # sometimes there is room leftover though
+        num_rows = math.ceil(self.n_circles / num_columns)
+
+        margin_x = 1 / (num_columns - 0.5)
+        margin_y = 1 / (num_rows - 1)
+
+        result = []
+        for i in range(self.n_circles):
+            # The row the new point will be placed
+            row = int(len(result) / num_columns)
+
+            # The coordinates of the new point
+            y = 1 - row * margin_y
+            x = (i % num_columns) * margin_x
+            # If we are on an uneven row, add a bit of margin
+            if (row % 2) == 1:
+                x += 0.5 * margin_x
+
+            result.append([x, y])
+
+        result = sum(result, [])
+        # result += np.random.normal(loc=0, scale=0.1 * margin_x, size=self.n_circles * 2)
+        result = np.clip(result, 0, 1)
+        return result
 
 
 def main():
@@ -326,6 +353,16 @@ def experiment6():
     runner.fitness_plots.show()
 
 
+def plot_warm_start_solution():
+    runner = CirclesInASquare(19)
+    population_size = 10
+    individual = runner.get_warm_start(population_size)[0]
+    x0, x1 = np.reshape(individual, (-1, 2)).transpose()
+    plt.scatter(x0, x1)
+    plt.show()
+
+
 if __name__ == "__main__":
     # NOTE: locally create an empty "results" folder in the root of the repo
-    experiment6()
+    # experiment6()
+    plot_warm_start_solution()
