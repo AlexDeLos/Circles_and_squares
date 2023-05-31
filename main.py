@@ -220,9 +220,13 @@ class CirclesInASquare:
         return result
 
     def get_warm_start_individual_honey_comb(self):
+        """
+        Function to create a warm start for an individual following the honeycomb pattern.
+        """
         num_columns = math.floor(self.n_circles ** 0.5)
         # The `ceil` here ensures there is always enough room for all the points,
-        # sometimes there is room leftover though
+        # sometimes there is room leftover though.
+        # TODO: Think about if this is preferred over making less honeycombs and randomly adding leftover points.
         num_rows = math.ceil(self.n_circles / num_columns)
 
         margin_x = 1 / (num_columns - 0.5)
@@ -243,7 +247,7 @@ class CirclesInASquare:
             result.append([x, y])
 
         result = sum(result, [])
-        # result += np.random.normal(loc=0, scale=0.1 * margin_x, size=self.n_circles * 2)
+        result += np.random.normal(loc=0, scale=0.1 * margin_x, size=self.n_circles * 2)
         result = np.clip(result, 0, 1)
         return result
 
@@ -354,8 +358,11 @@ def experiment6():
 
 
 def plot_warm_start_solution():
+    """
+    Helper function used to test warm start functions.
+    """
     runner = CirclesInASquare(19)
-    population_size = 10
+    population_size = 1
     individual = runner.get_warm_start(population_size)[0]
     x0, x1 = np.reshape(individual, (-1, 2)).transpose()
     plt.scatter(x0, x1)
