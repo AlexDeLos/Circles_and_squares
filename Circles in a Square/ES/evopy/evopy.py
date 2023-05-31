@@ -16,7 +16,7 @@ class EvoPy:
                  population_size=30, num_children=1, mean=0, std=1, maximize=False,
                  strategy=Strategy.SINGLE_VARIANCE, random_seed=None, reporter=None,
                  target_fitness_value=None, target_tolerance=1e-5, max_run_time=None,
-                 max_evaluations=None, bounds=None, max_age=0, force_strength=0, mutation_rate=1):
+                 max_evaluations=None, bounds=None):
         """Initializes an EvoPy instance.
 
         :param fitness_function: the fitness function on which the individuals are evaluated
@@ -40,7 +40,7 @@ class EvoPy:
         """
         self.fitness_function = fitness_function
         self.individual_length = individual_length
-        self.warm_start = warm_start
+        self.warm_start = np.zeros(self.individual_length) if warm_start is None else warm_start
         self.generations = generations
         self.population_size = population_size
         self.num_children = num_children
@@ -56,10 +56,7 @@ class EvoPy:
         self.max_run_time = max_run_time
         self.max_evaluations = max_evaluations
         self.bounds = bounds
-        self.max_age = max_age
         self.evaluations = 0
-        self.force_strength=force_strength
-        self.mutation_rate=mutation_rate
 
     def _check_early_stop(self, start_time, best):
         """Check whether the algorithm can stop early, based on time and fitness target.
@@ -93,33 +90,21 @@ class EvoPy:
         for generation in range(self.generations):
             children = [parent.reproduce() for _ in range(self.num_children)
                         for parent in population]
-            population = self._age_population(population)
-            population = sorted(children+population, reverse=self.maximize,
+            population = sorted(children, reverse=self.maximize,
                                 key=lambda individual: individual.evaluate(self.fitness_function))
             self.evaluations += len(population)
             population = population[:self.population_size]
             best = population[0]
 
-            should_stop = self._check_early_stop(start_time, best) or generation == self.generations - 1
-
             if self.reporter is not None:
                 mean = np.mean([x.fitness for x in population])
                 std = np.std([x.fitness for x in population])
-                self.reporter(ProgressReport(generation, self.evaluations, best.genotype, best.fitness, mean, std, time.time() - start_time, should_stop))
+                self.reporter(ProgressReport(generation, self.evaluations, best.genotype, best.fitness, mean, std))
 
-            if should_stop:
+            if self._check_early_stop(start_time, best):
                 break
 
         return best.genotype
-
-    def _age_population(self, population):
-        """
-        Increases the age of individuals in the population by 1 and kills individuals that reached the maximum age and
-        """
-        population = list(filter(lambda i: i.age < self.max_age, population))
-        for individual in population:
-            individual.age += 1
-        return population
 
     def _init_population(self):
         if self.strategy == Strategy.SINGLE_VARIANCE:
@@ -131,20 +116,15 @@ class EvoPy:
                 int((self.individual_length + 1) * self.individual_length / 2))
         else:
             raise ValueError("Provided strategy parameter was not an instance of Strategy")
-
-        if self.warm_start is None:
-            population_parameters = np.asarray([
-                self.random.normal(loc=0, scale=self.std, size=self.individual_length)
-                for n in range(self.population_size)
-            ])
-        else:
-            population_parameters = self.warm_start
+        population_parameters = np.asarray([
+            self.warm_start + self.random.normal(loc=self.mean, scale=self.std, size=self.individual_length)
+            for _ in range(self.population_size)
+        ])
 
         # Make sure parameters are within bounds
         if self.bounds is not None:
-            population_parameters = np.clip(population_parameters, self.bounds[0], self.bounds[1])
-            #oob_indices = (population_parameters < self.bounds[0]) | (population_parameters > self.bounds[1])
-            #population_parameters[oob_indices] = self.random.uniform(self.bounds[0], self.bounds[1], size=np.count_nonzero(oob_indices))
+            oob_indices = (population_parameters < self.bounds[0]) | (population_parameters > self.bounds[1])
+            population_parameters[oob_indices] = self.random.uniform(self.bounds[0], self.bounds[1], size=np.count_nonzero(oob_indices))
 
         return [
             Individual(
@@ -154,8 +134,6 @@ class EvoPy:
                 self.strategy, strategy_parameters,
                 # Set seed and bounds for reproduction
                 random_seed=self.random,
-                bounds=self.bounds,
-                force_strength=self.force_strength,
-                mutation_rate = self.mutation_rate
+                bounds=self.bounds
             ) for parameters in population_parameters
         ]

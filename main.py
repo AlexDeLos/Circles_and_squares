@@ -146,7 +146,7 @@ class CirclesInASquare:
         return 100 #values_to_reach[self.n_circles - 2]
 
     def run_evolution_strategies(self, generations=1000, num_children=1, max_age=0, strategy=Strategy.SINGLE_VARIANCE,
-                                 population_size=30, max_evaluations=1e5, use_warm_start = True, force_strength=0):
+                                 population_size=30, max_evaluations=1e5, use_warm_start = True, force_strength=0, mutation_rate=1):
         if self.plot_best_sol or self.save_sols:
             #quick and dirty way to reset the plot when the same runner is reused with new parameters
             self.set_up_plot()
@@ -174,7 +174,8 @@ class CirclesInASquare:
                 max_age=max_age,
                 strategy=strategy,
                 warm_start = self.getWarmStart(population_size) if use_warm_start else None,
-                force_strength = self.force_strength
+                force_strength = self.force_strength,
+                mutation_rate = mutation_rate
             )
 
             best_solutions.append(self.evopy.run())
@@ -368,7 +369,22 @@ def experiment8():
                                             use_warm_start= use_warm_start)
     runner.fitness_plots.show()
 
+def experiment9():
+    """
+    0909
+    """
+    circles = 10
+    runner = CirclesInASquare(circles, plot_sols=False, save_sols=False, number_of_runs=10)
+    for population_size in [10, 50]:
+        runner.fitness_plots.set_subplot(f"Population Size = {str(population_size)}")
+        for mutation_rate in [0.1, 0.3, 1]:
+            runner.fitness_plots.set_line(f"mutation_rate = {str(mutation_rate)}")
+            runner.run_evolution_strategies(generations=100, num_children=2, max_age=1000000, population_size=population_size,
+                                            strategy=Strategy.SINGLE_VARIANCE, force_strength=0,
+                                            use_warm_start= True, mutation_rate=mutation_rate)
+    runner.fitness_plots.show()
+
 
 if __name__ == "__main__":
     # NOTE: locally create an empty "results" folder in the root of the repo
-    main()
+    experiment9()

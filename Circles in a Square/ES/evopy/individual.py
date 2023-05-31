@@ -3,7 +3,6 @@ import numpy as np
 
 from evopy.strategy import Strategy
 from evopy.utils import random_with_seed
-from forces import calculate_forces
 
 
 class Individual:
@@ -20,7 +19,7 @@ class Individual:
     _BETA = 0.0873
     _EPSILON = 0.01
 
-    def __init__(self, genotype, strategy, strategy_parameters, bounds=None, random_seed=None, force_strength=0, mutation_rate=1):
+    def __init__(self, genotype, strategy, strategy_parameters, bounds=None, random_seed=None):
         """Initialize the Individual.
 
         :param genotype: the genotype of the individual
@@ -37,7 +36,6 @@ class Individual:
         self.bounds = bounds
         self.strategy = strategy
         self.strategy_parameters = strategy_parameters
-        self.age = 0
         if not isinstance(strategy, Strategy):
             raise ValueError("Provided strategy parameter was not an instance of Strategy.")
         if strategy == Strategy.SINGLE_VARIANCE and len(strategy_parameters) == 1:
@@ -50,9 +48,6 @@ class Individual:
         else:
             raise ValueError("The length of the strategy parameters was not correct.")
 
-        self.force_strength = force_strength
-        self.mutation_rate = mutation_rate
-
     def evaluate(self, fitness_function):
         """Evaluate the genotype of the individual using the provided fitness function.
 
@@ -63,36 +58,6 @@ class Individual:
 
         return self.fitness
 
-    def _distribution_mean(self):
-        """
-        Shifts the genotype according to forces
-        :return: mean of the sample distribution
-        """
-        #todo: add a 'probability_to_apply_forces' parameter
-        #todo: mutate the 'force_strength' parameter (single_variance style, but for means)
-        #todo: turn force parameters into a (self.length//2)-dim array, 1 per circle. (multiple_variance style, but for means)
-
-        #please rework this:
-        #probability_to_apply_forces = 0.2
-        # apply_forces = self.random.choice([True, False], size=self.length//2, p = [probability_to_apply_forces, 1-probability_to_apply_forces])
-        # if any(apply_forces):
-        #     indices = np.zeros(self.length, dtype=np.bool)
-        #     indices[0::2] = apply_forces
-        #     indices[1::2] = apply_forces
-        #     mean[indices] = mean[indices] + calculate_forces(self.genotype[indices], self.force_strength).flatten()
-
-        mean = self.genotype
-        if self.force_strength > 0:
-            return mean + calculate_forces(self.genotype, self.force_strength).flatten()
-        return mean
-
-    def _handle_oob_indices(self, new_genotype):
-        # Originally: "Randomly sample out of bounds indices"
-        #oob_indices = (new_genotype < self.bounds[0]) | (new_genotype > self.bounds[1])
-        #new_genotype[oob_indices] = self.random.uniform(self.bounds[0], self.bounds[1], size=np.count_nonzero(oob_indices))
-        # Clip out of bounds indices instead
-        return np.clip(new_genotype, self.bounds[0], self.bounds[1])
-
     def _reproduce_single_variance(self):
         """Create a single offspring individual from the set genotype and strategy parameters.
 
@@ -100,13 +65,12 @@ class Individual:
 
         :return: an individual which is the offspring of the current instance
         """
-        if self.random.rand() < self.mutation_rate:
-            new_genotype = self._distribution_mean() + self.strategy_parameters[0] * self.random.randn(self.length)
-        else:
-            new_genotype = self._distribution_mean()
+        new_genotype = self.genotype + self.strategy_parameters[0] * self.random.randn(self.length)
+        # Randomly sample out of bounds indices
+        oob_indices = (new_genotype < self.bounds[0]) | (new_genotype > self.bounds[1])
+        new_genotype[oob_indices] = self.random.uniform(self.bounds[0], self.bounds[1], size=np.count_nonzero(oob_indices))
         scale_factor = self.random.randn() * np.sqrt(1 / (2 * self.length))
         new_parameters = [max(self.strategy_parameters[0] * np.exp(scale_factor), self._EPSILON)]
-        new_genotype = self._handle_oob_indices(new_genotype)
         return Individual(new_genotype, self.strategy, new_parameters, bounds=self.bounds, random_seed=self.random)
 
     def _reproduce_multiple_variance(self):
@@ -116,15 +80,17 @@ class Individual:
 
         :return: an individual which is the offspring of the current instance
         """
-        new_genotype = self._distribution_mean() + [self.strategy_parameters[i] * self.random.randn()
+        new_genotype = self.genotype + [self.strategy_parameters[i] * self.random.randn()
                                         for i in range(self.length)]
+        # Randomly sample out of bounds indices
+        oob_indices = (new_genotype < self.bounds[0]) | (new_genotype > self.bounds[1])
+        new_genotype[oob_indices] = self.random.uniform(self.bounds[0], self.bounds[1], size=np.count_nonzero(oob_indices))
         global_scale_factor = self.random.randn() * np.sqrt(1 / (2 * self.length))
         scale_factors = [self.random.randn() * np.sqrt(1 / 2 * np.sqrt(self.length))
                          for _ in range(self.length)]
         new_parameters = [max(np.exp(global_scale_factor + scale_factors[i])
                               * self.strategy_parameters[i], self._EPSILON)
                           for i in range(self.length)]
-        new_genotype = self._handle_oob_indices(new_genotype)
         return Individual(new_genotype, self.strategy, new_parameters, bounds=self.bounds)
 
     # pylint: disable=invalid-name
@@ -157,5 +123,7 @@ class Individual:
                 T_pq[q][p] = -T_pq[p][q]
                 T = np.matmul(T, T_pq)
         new_genotype = self.genotype + T @ self.random.randn(self.length)
-        new_genotype = self._handle_oob_indices(new_genotype)
+        # Randomly sample out of bounds indices
+        oob_indices = (new_genotype < self.bounds[0]) | (new_genotype > self.bounds[1])
+        new_genotype[oob_indices] = self.random.uniform(self.bounds[0], self.bounds[1], size=np.count_nonzero(oob_indices))
         return Individual(new_genotype, self.strategy, new_variances + new_rotations, bounds=self.bounds)

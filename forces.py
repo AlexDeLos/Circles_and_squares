@@ -4,8 +4,8 @@ from sklearn.metrics.pairwise import euclidean_distances
 from sklearn.preprocessing import normalize
 
 SAFE_DIVISION_EPSILON = 1e-8
-
-def calculate_forces_full(genotype, strength=0.00000005):
+#place the next function in comments to use the old version
+'''def calculate_forces_full(genotype, strength=0.00000005):
     """
     Calculate forces by considering all neighbours
     """
@@ -16,7 +16,13 @@ def calculate_forces_full(genotype, strength=0.00000005):
     distances = euclidean_distances(points, squared=True) + SAFE_DIVISION_EPSILON
     np.fill_diagonal(distances, strength) #"strength" is actually the distances to self
     weights = normalize(1/distances)
-    return np.einsum('ijk,ij->ik', differences, weights).flatten()
+    return np.einsum('ijk,ij->ik', differences, weights).flatten()'''
+
+#Mutate the strength parameter below to change the strength of the forces
+def mutate_force_strength(strength, mutate_rate=0.05):
+    #if np.random.rand() <= mutate_rate:
+    return strength + np.random.randn() * 0.01
+    #return strength
 
 def calculate_forces(genotype, strength=0.25):
     """
@@ -29,6 +35,7 @@ def calculate_forces(genotype, strength=0.25):
     np.fill_diagonal(distances, 10)
     closest_neighbours = np.argmin(distances, axis=-1)
     weights = 1/(distances[tuple(zip(*enumerate(closest_neighbours)))] + SAFE_DIVISION_EPSILON)
+    strength = mutate_force_strength(strength)
     return strength*weights[:, np.newaxis] * (points - points[closest_neighbours])
 
 def plot_forces(genotype, strength=0.25):

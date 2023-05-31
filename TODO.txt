@@ -1,0 +1,14 @@
+TODO:
+- Debug individual.py -> _distribution_mean() function to make sure it does what we think it does: Thomas
+- Honeycomb warm start: Thomas
+- Mutating force strength just like we do the variances: Sid
+- Add inertia to force: Alex
+- Optimizing the hyperparameters: Sid
+- "Change the constraint handling technique by implementing either boundary repair [1] or the more advanced
+constraint domination [5]" -> check this means the boundary clipping: Alex
+
+
+
+Sid:
+Mutate force strengths, parameters and genotypes all with different mutation_rates - maybe dynamically change the mutation rates
+Optimise the hyperparameters
