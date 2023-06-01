@@ -38,6 +38,7 @@ class Individual:
         self.strategy = strategy
         self.strategy_parameters = strategy_parameters
         self.age = 0
+        self.inertia = np.zeros(len(genotype))
         if not isinstance(strategy, Strategy):
             raise ValueError("Provided strategy parameter was not an instance of Strategy.")
         if strategy == Strategy.SINGLE_VARIANCE and len(strategy_parameters) == 1:
@@ -83,7 +84,12 @@ class Individual:
 
         mean = self.genotype
         if self.force_strength > 0:
-            return mean + calculate_forces(self.genotype, self.force_strength).flatten()
+            change_vector = calculate_forces(self.genotype, self.force_strength).flatten() + self.inertia
+            # normalize it
+            change = change_vector/np.linalg.norm(change_vector)
+            result = mean + change
+            self.inertia = change
+            return result
         return mean
 
     def _handle_oob_indices(self, new_genotype):
