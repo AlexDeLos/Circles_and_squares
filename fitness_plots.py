@@ -192,10 +192,17 @@ class FitnessPlots:
                     colors[line_name] = rainbow[rainbow_index]
                     rainbow_index = (rainbow_index+1)%len(rainbow)
                 if len(self.ys[subplot_name][line_name]) > 0:
-                    subax.errorbar(self.xs_mean[subplot_name][line_name], self.ys_mean[subplot_name][line_name],
-                                   xerr = self.xs_std[subplot_name][line_name],
-                                   yerr = self.ys_std[subplot_name][line_name],
-                                   label=line_name, color=colors[line_name])
+                    subax.plot(self.xs_mean[subplot_name][line_name], self.ys_mean[subplot_name][line_name],
+                             label=line_name, color=colors[line_name])
+                    subax.fill_between(x=self.xs_mean[subplot_name][line_name],
+                                     y1=self.ys_mean[subplot_name][line_name]-self.ys_std[subplot_name][line_name],
+                                     y2=self.ys_mean[subplot_name][line_name]+self.ys_std[subplot_name][line_name],
+                                     facecolor=colors[line_name], alpha=0.3)
+                    # Old version: errorbars
+                    # subax.errorbar(self.xs_mean[subplot_name][line_name], self.ys_mean[subplot_name][line_name],
+                    #                xerr = self.xs_std[subplot_name][line_name],
+                    #                yerr = self.ys_std[subplot_name][line_name],
+                    #                label=line_name, color=colors[line_name])
                     subax.legend() #legend per subplot
                     y_min = min(y_min, self.ys[subplot_name][line_name].min())
                     y_max = max(y_max, self.ys[subplot_name][line_name].max())
