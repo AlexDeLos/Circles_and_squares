@@ -18,25 +18,24 @@ SAFE_DIVISION_EPSILON = 1e-8
     weights = normalize(1/distances)
     return np.einsum('ijk,ij->ik', differences, weights).flatten()'''
 
-#Mutate the strength parameter below to change the strength of the forces
-def mutate_force_strength(strength, mutate_rate=0.05):
-    #if np.random.rand() <= mutate_rate:
-    return strength + np.random.randn() * 0.01
-    #return strength
-
-def calculate_forces(genotype, strength=0.25):
+def calculate_forces(genotype, strength=0.25, k=1):
     """
-    Calculate forces by only considering the closest neighbours
+    Calculate forces by only considering the k closest neighbours
     """
+    HIGH_VALUE = 10
     if strength <= 0:
         return np.zeros(genotype.shape)
     points = np.reshape(genotype, (-1, 2))
     distances = euclidean_distances(points, squared=True)
-    np.fill_diagonal(distances, 10)
-    closest_neighbours = np.argmin(distances, axis=-1)
-    weights = 1/(distances[tuple(zip(*enumerate(closest_neighbours)))] + SAFE_DIVISION_EPSILON)
-    strength = mutate_force_strength(strength)
-    return strength*weights[:, np.newaxis] * (points - points[closest_neighbours])
+    np.fill_diagonal(distances, HIGH_VALUE)
+    forces = np.zeros(points.shape)
+    for _ in range(k):
+        closest_neighbours = np.argmin(distances, axis=-1)
+        indices = tuple(zip(*enumerate(closest_neighbours)))
+        weights = 1/(distances[indices] + SAFE_DIVISION_EPSILON)
+        distances[indices] = HIGH_VALUE
+        forces += strength/k*weights[:, np.newaxis] * (points - points[closest_neighbours])
+    return forces
 
 def plot_forces(genotype, strength=0.25):
     points = np.reshape(genotype, (-1, 2))

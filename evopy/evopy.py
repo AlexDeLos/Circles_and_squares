@@ -105,7 +105,7 @@ class EvoPy:
             if self.reporter is not None:
                 mean = np.mean([x.fitness for x in population])
                 std = np.std([x.fitness for x in population])
-                self.reporter(ProgressReport(generation, self.evaluations, best.genotype, best.fitness, mean, std, time.time() - start_time, should_stop))
+                self.reporter(ProgressReport(generation, self.evaluations, best, best.genotype, best.fitness, mean, std, time.time() - start_time, should_stop))
 
             if should_stop:
                 break

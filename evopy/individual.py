@@ -1,5 +1,6 @@
 """Module containing the individuals of the evolutionary strategy algorithm."""
 import numpy as np
+from matplotlib import pyplot as plt
 
 from evopy.strategy import Strategy
 from evopy.utils import random_with_seed
@@ -84,7 +85,14 @@ class Individual:
 
         mean = self.genotype
         if self.force_strength > 0:
+
+            # scale_factor = self.random.randn() * np.sqrt(1 / (2 * self.length))
+            # self.force_strength = max(self.force_strength * np.exp(scale_factor), self._EPSILON)
+
+            return mean + calculate_forces(self.genotype, self.force_strength).flatten()
+
             change_vector = calculate_forces(self.genotype, self.force_strength).flatten() + self.inertia
+
             # normalize it
             change = change_vector/np.linalg.norm(change_vector)
             result = mean + change
@@ -113,7 +121,7 @@ class Individual:
         scale_factor = self.random.randn() * np.sqrt(1 / (2 * self.length))
         new_parameters = [max(self.strategy_parameters[0] * np.exp(scale_factor), self._EPSILON)]
         new_genotype = self._handle_oob_indices(new_genotype)
-        return Individual(new_genotype, self.strategy, new_parameters, bounds=self.bounds, random_seed=self.random)
+        return Individual(new_genotype, self.strategy, new_parameters, force_strength=self.force_strength, bounds=self.bounds, random_seed=self.random)
 
     def _reproduce_multiple_variance(self):
         """Create a single offspring individual from the set genotype and strategy.
@@ -165,3 +173,9 @@ class Individual:
         new_genotype = self.genotype + T @ self.random.randn(self.length)
         new_genotype = self._handle_oob_indices(new_genotype)
         return Individual(new_genotype, self.strategy, new_variances + new_rotations, bounds=self.bounds)
+
+    def plot_distribution_mean(self):
+        points = np.reshape(self.genotype, (-1, 2))
+        delta = np.reshape(self._distribution_mean()-self.genotype, (-1, 2))
+        for p0, p1, f0, f1 in zip(points[:, 0], points[:, 1], delta[:, 0], delta[:, 1]):
+            plt.arrow(p0, p1, f0, f1, head_width=0.02, head_length=0.02, fc='k', ec='k')

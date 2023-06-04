@@ -104,7 +104,8 @@ class CirclesInASquare:
             self.ax.clear()
             self.ax.scatter(points[:, 0], points[:, 1], clip_on=False, color="black")
             if self.force_strength > 0:
-                plot_forces(points, strength=self.force_strength)
+                report.best_individual.plot_distribution_mean()
+                #plot_forces(points, strength=report.best_individual.force_strength)
             self.ax.set_xlim((0, 1))
             self.ax.set_ylim((0, 1))
             self.ax.set_title(f"Best solution in generation {report.generation} (Fitness {report.best_fitness})")
@@ -384,7 +385,24 @@ def experiment9():
                                             use_warm_start= True, mutation_rate=mutation_rate)
     runner.fitness_plots.show()
 
+def experiment10():
+    """
+    Comparing Forces vs No Forces
+    Population size = 75
+    num_children = 3
+    """
+    circles = 10
+    runner = CirclesInASquare(circles, plot_sols=False, save_sols=False, number_of_runs=10)
+    for number_of_circles in [10, 20]:
+        runner.fitness_plots.set_subplot(f"Number of Circles = {str(number_of_circles)}")
+        runner.n_circles = number_of_circles
+        for force_strength in [0, 0.01]:
+            runner.fitness_plots.set_line(f"force_strength = {str(force_strength)}")
+            runner.run_evolution_strategies(generations=1000000, num_children=3, max_age=1000000, population_size=75,
+                                            strategy=Strategy.SINGLE_VARIANCE, force_strength=force_strength,
+                                            use_warm_start= True, mutation_rate=1)
+    runner.fitness_plots.show()
 
 if __name__ == "__main__":
     # NOTE: locally create an empty "results" folder in the root of the repo
-    experiment9()
+    experiment10()
