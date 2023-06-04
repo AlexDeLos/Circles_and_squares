@@ -16,7 +16,7 @@ class EvoPy:
                  population_size=30, num_children=1, mean=0, std=1, maximize=False,
                  strategy=Strategy.SINGLE_VARIANCE, random_seed=None, reporter=None,
                  target_fitness_value=None, target_tolerance=1e-5, max_run_time=None,
-                 max_evaluations=None, bounds=None, max_age=0, force_strength=0, mutation_rate=1):
+                 max_evaluations=None, bounds=None, max_age=0, forces_config=None, mutation_rate=1):
         """Initializes an EvoPy instance.
 
         :param fitness_function: the fitness function on which the individuals are evaluated
@@ -58,7 +58,7 @@ class EvoPy:
         self.bounds = bounds
         self.max_age = max_age
         self.evaluations = 0
-        self.force_strength=force_strength
+        self.forces_config=forces_config
         self.mutation_rate=mutation_rate
 
     def _check_early_stop(self, start_time, best):
@@ -155,7 +155,7 @@ class EvoPy:
                 # Set seed and bounds for reproduction
                 random_seed=self.random,
                 bounds=self.bounds,
-                force_strength=self.force_strength,
+                forces_config=self.forces_config,
                 mutation_rate = self.mutation_rate
             ) for parameters in population_parameters
         ]

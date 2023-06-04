@@ -4,7 +4,7 @@ from matplotlib import pyplot as plt
 
 from evopy.strategy import Strategy
 from evopy.utils import random_with_seed
-from forces import calculate_forces
+from forces import ForcesConfig
 
 
 class Individual:
@@ -21,13 +21,14 @@ class Individual:
     _BETA = 0.0873
     _EPSILON = 0.01
 
-    def __init__(self, genotype, strategy, strategy_parameters, bounds=None, random_seed=None, force_strength=0, mutation_rate=1):
+    def __init__(self, genotype, strategy, strategy_parameters, bounds=None, random_seed=None, forces_config: ForcesConfig=None, forces_scale_param=1, inertia=None, mutation_rate=1):
         """Initialize the Individual.
 
         :param genotype: the genotype of the individual
         :param strategy: the strategy chosen to reproduce. See the Strategy enum for more
                          information
         :param strategy_parameters: the parameters required for the given strategy, as a list
+        :param forces_scale_param: factor of 1 that can be mutated to scale the force strength
         """
         self.genotype = genotype
         self.length = len(genotype)
@@ -39,7 +40,7 @@ class Individual:
         self.strategy = strategy
         self.strategy_parameters = strategy_parameters
         self.age = 0
-        self.inertia = np.zeros(len(genotype))
+        self.inertia = np.zeros(len(genotype)) if inertia is None else inertia
         if not isinstance(strategy, Strategy):
             raise ValueError("Provided strategy parameter was not an instance of Strategy.")
         if strategy == Strategy.SINGLE_VARIANCE and len(strategy_parameters) == 1:
@@ -52,7 +53,8 @@ class Individual:
         else:
             raise ValueError("The length of the strategy parameters was not correct.")
 
-        self.force_strength = force_strength
+        self.forces_config = forces_config
+        self.forces_scale_param = forces_scale_param
         self.mutation_rate = mutation_rate
 
     def evaluate(self, fitness_function):
@@ -70,34 +72,25 @@ class Individual:
         Shifts the genotype according to forces
         :return: mean of the sample distribution
         """
-        #todo: add a 'probability_to_apply_forces' parameter
-        #todo: mutate the 'force_strength' parameter (single_variance style, but for means)
-        #todo: turn force parameters into a (self.length//2)-dim array, 1 per circle. (multiple_variance style, but for means)
-
-        #please rework this:
-        #probability_to_apply_forces = 0.2
-        # apply_forces = self.random.choice([True, False], size=self.length//2, p = [probability_to_apply_forces, 1-probability_to_apply_forces])
-        # if any(apply_forces):
-        #     indices = np.zeros(self.length, dtype=np.bool)
-        #     indices[0::2] = apply_forces
-        #     indices[1::2] = apply_forces
-        #     mean[indices] = mean[indices] + calculate_forces(self.genotype[indices], self.force_strength).flatten()
+        #todo: COULD HAVE: turn `forces_scale_param` into a (self.length//2)-dim array, 1 per circle.
 
         mean = self.genotype
-        if self.force_strength > 0:
+        if not self.forces_config is None:
+            # Mutate the forces_scale_param
+            if self.random.rand() <= self.forces_config.mutation_rate:
+                scale_factor = self.random.randn() * np.sqrt(1 / (2 * self.length))
+                self.forces_scale_param = max(self.forces_scale_param * np.exp(scale_factor), 0.000001)
 
-            # scale_factor = self.random.randn() * np.sqrt(1 / (2 * self.length))
-            # self.force_strength = max(self.force_strength * np.exp(scale_factor), self._EPSILON)
+            return mean + self.forces_scale_param*self.forces_config.calculate_forces(self.genotype).flatten()
 
-            return mean + calculate_forces(self.genotype, self.force_strength).flatten()
-
-            change_vector = calculate_forces(self.genotype, self.force_strength).flatten() + self.inertia
-
-            # normalize it
-            change = change_vector/np.linalg.norm(change_vector)
-            result = mean + change
-            self.inertia = change
-            return result
+            # inertia
+            # change_vector = self.forces_scale_param*self.forces_config.calculate_forces(self.genotype).flatten() + self.inertia
+            #
+            # # normalize it
+            # change = change_vector/np.linalg.norm(change_vector)
+            # result = mean + change
+            # self.inertia = change
+            # return result
         return mean
 
     def _handle_oob_indices(self, new_genotype):
@@ -114,14 +107,14 @@ class Individual:
 
         :return: an individual which is the offspring of the current instance
         """
-        if self.random.rand() < self.mutation_rate:
+        if self.random.rand() <= self.mutation_rate:
             new_genotype = self._distribution_mean() + self.strategy_parameters[0] * self.random.randn(self.length)
         else:
             new_genotype = self._distribution_mean()
         scale_factor = self.random.randn() * np.sqrt(1 / (2 * self.length))
         new_parameters = [max(self.strategy_parameters[0] * np.exp(scale_factor), self._EPSILON)]
         new_genotype = self._handle_oob_indices(new_genotype)
-        return Individual(new_genotype, self.strategy, new_parameters, force_strength=self.force_strength, bounds=self.bounds, random_seed=self.random)
+        return Individual(new_genotype, self.strategy, new_parameters, forces_config=self.forces_config, bounds=self.bounds, random_seed=self.random, mutation_rate=self.mutation_rate, inertia=self.inertia, forces_scale_param=self.forces_scale_param)
 
     def _reproduce_multiple_variance(self):
         """Create a single offspring individual from the set genotype and strategy.
@@ -139,7 +132,7 @@ class Individual:
                               * self.strategy_parameters[i], self._EPSILON)
                           for i in range(self.length)]
         new_genotype = self._handle_oob_indices(new_genotype)
-        return Individual(new_genotype, self.strategy, new_parameters, bounds=self.bounds)
+        return Individual(new_genotype, self.strategy, new_parameters, forces_config=self.forces_config, bounds=self.bounds, mutation_rate=self.mutation_rate, inertia=self.inertia, forces_scale_param=self.forces_scale_param)
 
     # pylint: disable=invalid-name
     def _reproduce_full_variance(self):
@@ -172,7 +165,7 @@ class Individual:
                 T = np.matmul(T, T_pq)
         new_genotype = self.genotype + T @ self.random.randn(self.length)
         new_genotype = self._handle_oob_indices(new_genotype)
-        return Individual(new_genotype, self.strategy, new_variances + new_rotations, bounds=self.bounds)
+        return Individual(new_genotype, self.strategy, new_variances + new_rotations, forces_config=self.forces_config, bounds=self.bounds, mutation_rate=self.mutation_rate, inertia=self.inertia, forces_scale_param=self.forces_scale_param)
 
     def plot_distribution_mean(self):
         points = np.reshape(self.genotype, (-1, 2))

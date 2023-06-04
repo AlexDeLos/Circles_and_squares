@@ -2,7 +2,7 @@ import matplotlib
 # import random
 
 from fitness_plots import FitnessPlots, TrackableVariable
-from forces import plot_forces
+from forces import ForcesConfig
 
 matplotlib.use('Qt5Agg')
 
@@ -59,7 +59,7 @@ class CirclesInASquare:
         self.plot_best_sol = plot_sols
         self.save_sols = save_sols
         self.n_circles = n_circles
-        self.force_strength = None
+        self.forces_config = None
         self.fig = None
         self.ax = None
         assert 2 <= n_circles <= 20
@@ -103,7 +103,7 @@ class CirclesInASquare:
             points = np.reshape(report.best_genotype, (-1, 2))
             self.ax.clear()
             self.ax.scatter(points[:, 0], points[:, 1], clip_on=False, color="black")
-            if self.force_strength > 0:
+            if not self.forces_config is None:
                 report.best_individual.plot_distribution_mean()
                 #plot_forces(points, strength=report.best_individual.force_strength)
             self.ax.set_xlim((0, 1))
@@ -147,7 +147,7 @@ class CirclesInASquare:
         return 100 #values_to_reach[self.n_circles - 2]
 
     def run_evolution_strategies(self, generations=1000, num_children=1, max_age=0, strategy=Strategy.SINGLE_VARIANCE,
-                                 population_size=30, max_evaluations=1e5, use_warm_start = True, force_strength=0, mutation_rate=1):
+                                 population_size=30, max_evaluations=1e5, use_warm_start = True, forces_config=None, mutation_rate=1):
         if self.plot_best_sol or self.save_sols:
             #quick and dirty way to reset the plot when the same runner is reused with new parameters
             self.set_up_plot()
@@ -156,7 +156,7 @@ class CirclesInASquare:
 
         best_solutions = []
 
-        self.force_strength = force_strength
+        self.forces_config = forces_config
 
         for current_run in range(self.number_of_runs):
             self.fitness_plots.set_run(current_run)
@@ -175,7 +175,7 @@ class CirclesInASquare:
                 max_age=max_age,
                 strategy=strategy,
                 warm_start = self.getWarmStart(population_size) if use_warm_start else None,
-                force_strength = self.force_strength,
+                forces_config = self.forces_config,
                 mutation_rate = mutation_rate
             )
 
@@ -236,7 +236,13 @@ def main():
     """
     circles = 10
     runner = CirclesInASquare(circles, plot_sols=True, output_statistics=True)
-    runner.run_evolution_strategies(generations=1000, max_age=1000, num_children=4, force_strength=0.01)
+
+    runner.run_evolution_strategies(generations=1000000, num_children=2,
+                                    max_age=1000000, population_size=75,
+                                    strategy=Strategy.SINGLE_VARIANCE,
+                                    forces_config=ForcesConfig(force_strength=0.01,
+                                                               number_of_neighbours=1),
+                                    use_warm_start=True, mutation_rate=1)
 
 def fitness_plots_from_backup(number_of_error_bars=float("inf")):
     circles = 10
@@ -366,7 +372,8 @@ def experiment8():
             else:
                 runner.fitness_plots.set_line(f"Random Initialization")
             runner.run_evolution_strategies(generations=100, num_children=2, max_age=1000000, population_size=50,
-                                            strategy=Strategy.SINGLE_VARIANCE, force_strength=force_strength,
+                                            strategy=Strategy.SINGLE_VARIANCE,
+                                            forces_config=ForcesConfig(force_strength=0.01),
                                             use_warm_start= use_warm_start)
     runner.fitness_plots.show()
 
@@ -381,28 +388,29 @@ def experiment9():
         for mutation_rate in [0.1, 0.3, 1]:
             runner.fitness_plots.set_line(f"mutation_rate = {str(mutation_rate)}")
             runner.run_evolution_strategies(generations=100, num_children=2, max_age=1000000, population_size=population_size,
-                                            strategy=Strategy.SINGLE_VARIANCE, force_strength=0,
+                                            strategy=Strategy.SINGLE_VARIANCE,
+                                            forces_config=ForcesConfig(force_strength=0.01),
                                             use_warm_start= True, mutation_rate=mutation_rate)
     runner.fitness_plots.show()
 
 def experiment10():
     """
     Comparing Forces vs No Forces
-    Population size = 75
-    num_children = 3
     """
     circles = 10
-    runner = CirclesInASquare(circles, plot_sols=False, save_sols=False, number_of_runs=10)
-    for number_of_circles in [10, 20]:
-        runner.fitness_plots.set_subplot(f"Number of Circles = {str(number_of_circles)}")
-        runner.n_circles = number_of_circles
-        for force_strength in [0, 0.01]:
-            runner.fitness_plots.set_line(f"force_strength = {str(force_strength)}")
-            runner.run_evolution_strategies(generations=1000000, num_children=3, max_age=1000000, population_size=75,
-                                            strategy=Strategy.SINGLE_VARIANCE, force_strength=force_strength,
+    runner = CirclesInASquare(circles, plot_sols=False, save_sols=True, number_of_runs=10)
+    for force_strength in [0.1, 0.01, 0.001, 0]:
+        runner.fitness_plots.set_subplot(f"force_strength = {str(force_strength)}")
+        for forces_mutation_rate in [0, 1]:
+            runner.fitness_plots.set_line(f"forces_mutation_rate = {str(forces_mutation_rate)}")
+            runner.run_evolution_strategies(generations=1000000, num_children=2, max_age=1000000, population_size=75,
+                                            strategy=Strategy.SINGLE_VARIANCE,
+                                            forces_config=ForcesConfig(force_strength=force_strength,
+                                                                       mutation_rate=forces_mutation_rate,
+                                                                       number_of_neighbours=1),
                                             use_warm_start= True, mutation_rate=1)
     runner.fitness_plots.show()
 
 if __name__ == "__main__":
     # NOTE: locally create an empty "results" folder in the root of the repo
-    experiment10()
+    main()
