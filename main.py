@@ -398,8 +398,8 @@ def experiment10():
     Comparing Forces vs No Forces
     """
     circles = 10
-    runner = CirclesInASquare(circles, plot_sols=False, save_sols=True, number_of_runs=10)
-    for force_strength in [0.1, 0.01, 0.001, 0]:
+    runner = CirclesInASquare(circles, plot_sols=False, save_sols=False, number_of_runs=10)
+    for force_strength in [1, 0.1, 0.01, 0.001, 0]:
         runner.fitness_plots.set_subplot(f"initial_force_strength = {str(force_strength)}")
         for forces_mutation_rate in [0, 1]:
             runner.fitness_plots.set_line(f"forces_mutation_rate = {str(forces_mutation_rate)}")
@@ -431,4 +431,5 @@ def experiment11():
 
 if __name__ == "__main__":
     # NOTE: locally create an empty "results" folder in the root of the repo
-    main()
+    experiment10()
+    # main()

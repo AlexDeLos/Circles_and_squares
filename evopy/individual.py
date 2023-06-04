@@ -80,19 +80,28 @@ class Individual:
             if self.random.rand() <= self.forces_config.mutation_rate:
                 scale_factor = self.random.randn() * np.sqrt(1 / (2 * self.length))
                 self.forces_scale_param = max(self.forces_scale_param * np.exp(scale_factor), 0.000001)
+            
+            
+            change_vector = self.forces_scale_param*self.forces_config.calculate_forces(self.genotype).flatten()
+            change = np.zeros(self.length)
+            
+            for i in range(int((self.length/2))):
+                x = [change_vector[i],change_vector[i+ int(self.length/2)]]
+                y = x/(np.linalg.norm(x)+0.0000001)
+                change[i] = y[0]
+                change[i+ int(self.length/2)] = y[1]
+            self.inertia = change_vector
 
-            return mean + self.forces_scale_param*self.forces_config.calculate_forces(self.genotype).flatten()
+            return mean + change_vector
+        
+
+
 
             # inertia
             # change_vector = self.forces_scale_param*self.forces_config.calculate_forces(self.genotype).flatten() + self.inertia
             #
             # # normalize it
             # change = np.zeros(self.length)
-            for i in range(int((self.length/2))):
-                x = [change_vector[i],change_vector[i+ int(self.length/2)]]
-                y = x/(np.linalg.norm(x)+0.0000001)
-                change[i] = y[0]
-                change[i+ int(self.length/2)] = y[1]
 
             # result = mean + change
             # self.inertia = change
