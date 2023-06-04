@@ -363,8 +363,8 @@ def experiment8():
     Compares different parameters for forces
     """
     circles = 10
-    runner = CirclesInASquare(circles, plot_sols=False, save_sols=True, number_of_runs=10)
-    for force_strength in [0.01, 0.0001, 0]:
+    runner = CirclesInASquare(circles, plot_sols=False, save_sols=False, number_of_runs=10)
+    for force_strength in [0.01, 1, 0]:
         runner.fitness_plots.set_subplot(f"Force Strength = {str(force_strength)}")
         for use_warm_start in [True]:
             if use_warm_start:

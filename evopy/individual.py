@@ -87,7 +87,13 @@ class Individual:
             # change_vector = self.forces_scale_param*self.forces_config.calculate_forces(self.genotype).flatten() + self.inertia
             #
             # # normalize it
-            # change = change_vector/np.linalg.norm(change_vector)
+            # change = np.zeros(self.length)
+            for i in range(int((self.length/2))):
+                x = [change_vector[i],change_vector[i+ int(self.length/2)]]
+                y = x/(np.linalg.norm(x)+0.0000001)
+                change[i] = y[0]
+                change[i+ int(self.length/2)] = y[1]
+
             # result = mean + change
             # self.inertia = change
             # return result
