@@ -17,6 +17,12 @@ class ForcesConfig:
         """
         Calculate forces applied to genotype
         """
+        if self.probability_to_apply_forces == 1:
+            if self.number_of_neighbours >= len(genotype)//2 - 1:
+                return self._calculate_forces_full(genotype)
+            else:
+                return self._calculate_forces_nearest_neighbours(genotype)
+
         forces = np.zeros(len(genotype))
         apply_forces = np.random.choice([True, False], size=len(genotype)//2,
                                           p = [self.probability_to_apply_forces, 1-self.probability_to_apply_forces])

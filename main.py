@@ -400,7 +400,25 @@ def experiment10():
     circles = 10
     runner = CirclesInASquare(circles, plot_sols=False, save_sols=True, number_of_runs=10)
     for force_strength in [0.1, 0.01, 0.001, 0]:
-        runner.fitness_plots.set_subplot(f"force_strength = {str(force_strength)}")
+        runner.fitness_plots.set_subplot(f"initial_force_strength = {str(force_strength)}")
+        for forces_mutation_rate in [0, 1]:
+            runner.fitness_plots.set_line(f"forces_mutation_rate = {str(forces_mutation_rate)}")
+            runner.run_evolution_strategies(generations=1000000, num_children=2, max_age=1000000, population_size=75,
+                                            strategy=Strategy.SINGLE_VARIANCE,
+                                            forces_config=ForcesConfig(force_strength=force_strength,
+                                                                       mutation_rate=forces_mutation_rate,
+                                                                       number_of_neighbours=1),
+                                            use_warm_start= True, mutation_rate=1)
+    runner.fitness_plots.show()
+
+def experiment11():
+    """
+    New experiment
+    """
+    circles = 10
+    runner = CirclesInASquare(circles, plot_sols=False, save_sols=True, number_of_runs=10)
+    for force_strength in [0.1, 0.01, 0.001, 0]:
+        runner.fitness_plots.set_subplot(f"initial_force_strength = {str(force_strength)}")
         for forces_mutation_rate in [0, 1]:
             runner.fitness_plots.set_line(f"forces_mutation_rate = {str(forces_mutation_rate)}")
             runner.run_evolution_strategies(generations=1000000, num_children=2, max_age=1000000, population_size=75,
