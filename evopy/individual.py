@@ -86,7 +86,7 @@ class Individual:
             change = np.zeros(self.length)
             
             for i in range(int((self.length/2))):
-                x = [change_vector[i],change_vector[i+ int(self.length/2)]]
+                x = [change_vector[i] +self.inertia[i], change_vector[i+ int(self.length/2)] +self.inertia[i+ int(self.length/2)]]
                 y = x/(np.linalg.norm(x)+0.0000001)
                 change[i] = y[0]
                 change[i+ int(self.length/2)] = y[1]
