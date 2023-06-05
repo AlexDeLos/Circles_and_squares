@@ -379,11 +379,11 @@ def experiment8():
 
 def experiment9():
     """
-    0909
+    Comparing different mutation rates for different population sizes
     """
     circles = 10
     runner = CirclesInASquare(circles, plot_sols=False, save_sols=False, number_of_runs=10)
-    for population_size in [10, 50]:
+    for population_size in [25,50,75]:
         runner.fitness_plots.set_subplot(f"Population Size = {str(population_size)}")
         for mutation_rate in [0.1, 0.3, 1]:
             runner.fitness_plots.set_line(f"mutation_rate = {str(mutation_rate)}")
@@ -399,9 +399,9 @@ def experiment10():
     """
     circles = 10
     runner = CirclesInASquare(circles, plot_sols=False, save_sols=False, number_of_runs=10)
-    for force_strength in [1, 0.1, 0.01, 0.001, 0]:
+    for force_strength in [1, 0.1, 0.01, 0.001]:
         runner.fitness_plots.set_subplot(f"initial_force_strength = {str(force_strength)}")
-        for forces_mutation_rate in [0, 1]:
+        for forces_mutation_rate in [0, 0.1, 0.3, 0.7, 1]:
             runner.fitness_plots.set_line(f"forces_mutation_rate = {str(forces_mutation_rate)}")
             runner.run_evolution_strategies(generations=1000000, num_children=2, max_age=1000000, population_size=75,
                                             strategy=Strategy.SINGLE_VARIANCE,
@@ -429,7 +429,38 @@ def experiment11():
                                             use_warm_start= True, mutation_rate=1)
     runner.fitness_plots.show()
 
+
+def experiment12():
+    """
+    Shows several plots for different `num_children` and `population_size`
+    """
+    circles = 10
+    runner = CirclesInASquare(circles, plot_sols=False)
+    for population_size in [25,50,75]:
+        runner.fitness_plots.set_subplot(population_size)
+        for num_children in [1,2,3,4]:
+            runner.fitness_plots.set_line(f"Number of children = {num_children}")
+            runner.run_evolution_strategies(generations=1000, num_children=num_children, max_age=1000, population_size=population_size,
+                                            strategy=Strategy.SINGLE_VARIANCE)
+    runner.fitness_plots.show()
+
+def experiment13():
+    """
+    Shows several plots for different `num_children` and `population_size`
+    """
+    circles = 10
+    runner = CirclesInASquare(circles, plot_sols=False)
+    for num_children in [1,2,3,4]:
+        runner.fitness_plots.set_subplot(num_children)
+        for population_size in [25,50,75]:
+            runner.fitness_plots.set_line(f"Population Size = {population_size}")
+            runner.run_evolution_strategies(generations=1000, num_children=num_children, max_age=1000, population_size=population_size,
+                                            strategy=Strategy.SINGLE_VARIANCE)
+    runner.fitness_plots.show()
+
+
 if __name__ == "__main__":
     # NOTE: locally create an empty "results" folder in the root of the repo
-    experiment10()
+    #experiment10()
+    fitness_plots_from_backup(100)
     # main()
