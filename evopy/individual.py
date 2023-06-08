@@ -100,15 +100,36 @@ class Individual:
 
         mean = self.genotype
         if not self.forces_config is None:
-            self._mutate_forces()
+            # Mutate the forces_scale_param
+            if self.random.rand() <= self.forces_config.mutation_rate:
+                scale_factor = self.random.randn() * np.sqrt(1 / (2 * self.length))
+                self.forces_scale_param = max(self.forces_scale_param * np.exp(scale_factor), 0.000001)
+            
+            
+            change_vector = self.forces_scale_param*self.forces_config.calculate_forces(self.genotype).flatten()
+            change = np.zeros(self.length)
+            
+            for i in range(int((self.length/2))):
+                x = [change_vector[i] +self.inertia[i], change_vector[i+ int(self.length/2)] +self.inertia[i+ int(self.length/2)]]
+                y = x/(np.linalg.norm(x)+0.0000001)
+                change[i] = y[0]
+                change[i+ int(self.length/2)] = y[1]
+            self.inertia = change
 
-            forces = self.forces_config.calculate_forces(self.genotype)
-            if self.forces_config.strategy == ForcesConfig.Strategy.SINGLE_FORCE_SCALES:
-                forces = self.forces_scale_param * forces
-            elif self.forces_config.strategy == ForcesConfig.Strategy.MULTIPLE_FORCE_SCALES:
-                forces = self.forces_scale_param[:, np.newaxis] * np.reshape(forces, (-1, 2))
+            return mean + change
+        
 
-            return mean + forces.flatten()
+
+
+            # inertia
+            # change_vector = self.forces_scale_param*self.forces_config.calculate_forces(self.genotype).flatten() + self.inertia
+            #
+            # # normalize it
+            # change = np.zeros(self.length)
+
+            # result = mean + change
+            # self.inertia = change
+            # return result
         return mean
 
     def _handle_oob_indices(self, new_genotype):
