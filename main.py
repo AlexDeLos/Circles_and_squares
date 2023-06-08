@@ -587,4 +587,5 @@ if __name__ == "__main__":
     # NOTE: locally create an empty "results" folder in the root of the repo
     # experiment6()
     # plot_warm_start_solution()
-    experiment14()
+    # experiment14()
+    main()
