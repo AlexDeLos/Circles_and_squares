@@ -361,11 +361,11 @@ def plot_warm_start_solution():
     """
     Helper function used to test warm start functions.
     """
-    runner = CirclesInASquare(19)
+    runner = CirclesInASquare(12)
     population_size = 1
     individual = runner.get_warm_start(population_size)[0]
     x0, x1 = np.reshape(individual, (-1, 2)).transpose()
-    plt.scatter(x0, x1)
+    plt.scatter(x0, x1, color='black')
     plt.show()
 
 
