@@ -179,7 +179,7 @@ class CirclesInASquare:
                 num_children=num_children,
                 max_age=max_age,
                 strategy=strategy,
-                warm_start=self.getWarmStart(population_size) if use_warm_start else None,
+                warm_start=self.get_warm_start(population_size) if use_warm_start else None,
                 forces_config=self.forces_config,
                 mutation_rate=mutation_rate
             )
@@ -586,4 +586,5 @@ def plot_warm_start_solution():
 if __name__ == "__main__":
     # NOTE: locally create an empty "results" folder in the root of the repo
     # experiment6()
-    plot_warm_start_solution()
+    # plot_warm_start_solution()
+    experiment14()
