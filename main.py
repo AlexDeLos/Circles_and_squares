@@ -588,13 +588,13 @@ def experiment17():
     """
     Plotting number of circles against best fitness
     """
-    runner = CirclesInASquare(10, plot_sols=False, save_sols=False, number_of_runs=1)
-    for generations in [1000000000000]:
+    runner = CirclesInASquare(10, plot_sols=False, save_sols=False, number_of_runs=10)
+    for generations in [10000000000000000000]:
         runner.fitness_plots.set_subplot(f"Fitness of Generation {generations}", x_variable=TrackableVariable.NUMBER_OF_CIRCLES, y_variable=TrackableVariable.BEST_FITNESS)
         for (name, use_warm_start) in [("Random Initialization", False), ("Honeycomb Warm Start", 1), ("Grid Warm Start", 2)]:
             #todo: distinguish grid and honeycomb warm start
             runner.fitness_plots.set_line(name)
-            for n_circles in range(4, 5):
+            for n_circles in range(4, 40):
                 print('n = ', n_circles)
                 runner.n_circles = n_circles
                 runner.run_evolution_strategies(generations=generations, num_children=2, max_age=1000000, population_size=200,
