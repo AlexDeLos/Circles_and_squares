@@ -14,7 +14,7 @@ class ForcesConfig:
         MULTIPLE_FORCE_SCALES = 2       # n scale factors, 1 per circle
 
     def __init__(self, force_strength=0.2, mutation_rate=1, probability_to_apply_forces=1,
-                 number_of_neighbours=1, strategy=Strategy.SINGLE_FORCE_SCALES,
+                 number_of_neighbours=1, strategy=Strategy.MULTIPLE_FORCE_SCALES,
                  force_epsilon=0.0000001):
         self.force_strength = force_strength                                #initial force_strength
         self.mutation_rate = mutation_rate                                  #probability to rescale the force_strength

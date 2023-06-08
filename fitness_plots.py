@@ -11,7 +11,8 @@ class TrackableVariable(Enum):
     BEST_FITNESS = "Fitness",
     AVG_FITNESS = "Avg Fitness",
     STD_FITNESS = "Std Fitness",
-    TIME_ELAPSED = "Time Elapsed"
+    TIME_ELAPSED = "Time Elapsed",
+    NUMBER_OF_CIRCLES = "Circles"
 
 class FitnessPlots:
     """
@@ -60,8 +61,13 @@ class FitnessPlots:
         print(self.current_subplot)
         print(self.current_line)
 
-    def set_run(self, run):
-        self.current_index = 0
+    def is_tracking_circles(self):
+        return (self.xvars[self.current_subplot] == TrackableVariable.NUMBER_OF_CIRCLES or
+                self.yvars[self.current_subplot] == TrackableVariable.NUMBER_OF_CIRCLES)
+
+    def set_run(self, run, force_reset_index=True):
+        if not self.is_tracking_circles():
+            self.current_index = 0
         self.current_run = run
         self.print_current_state()
 
@@ -86,6 +92,7 @@ class FitnessPlots:
         Set the line to add points to
         :param name: name of the line
         """
+        self.current_index = 0
         if not name in self.ys[self.current_subplot].keys():
             self.xs[self.current_subplot][name] = np.zeros((1, self.number_of_runs))
             self.ys[self.current_subplot][name] = np.zeros((1, self.number_of_runs))
@@ -96,6 +103,10 @@ class FitnessPlots:
         Adds a new data point to the current line of the current subplot
         :param report: statistics of the point that needs to be set
         """
+
+        if self.is_tracking_circles() and report.is_final_report == False:
+            return
+
         for lst, var in [(self.xs, self.xvars), (self.ys, self.yvars)]:
             if var[self.current_subplot] == TrackableVariable.GENERATIONS:
                 value = report.generation
@@ -109,6 +120,8 @@ class FitnessPlots:
                 value = report.std_fitness
             elif var[self.current_subplot] == TrackableVariable.TIME_ELAPSED:
                 value = report.time_elapsed
+            elif var[self.current_subplot] == TrackableVariable.NUMBER_OF_CIRCLES:
+                value = len(report.best_individual.genotype)//2
             else:
                 raise Exception("Invalid TrackableVariable")
 
@@ -131,6 +144,26 @@ class FitnessPlots:
                 del self.ys[subplot_name]
                 del self.xvars[subplot_name]
                 del self.yvars[subplot_name]
+
+        if self.is_tracking_circles():
+            for subplot_name in set(self.ys.keys()):
+                for line_name in set(self.ys[subplot_name].keys()):
+
+                    def ThomasForLoopFabriek(x):
+                        res = []
+                        for i in range(x.shape[1]):
+                            res.append([])
+                            for j in range(x.shape[0] // x.shape[1]):
+                                res[i].append(x[i + j * x.shape[1], i])
+                        return np.array(res).transpose()
+
+                    self.xs[subplot_name][line_name] = ThomasForLoopFabriek(self.xs[subplot_name][line_name])
+                    self.ys[subplot_name][line_name] = ThomasForLoopFabriek(self.ys[subplot_name][line_name])
+
+                    # indices = np.where(self.xs[subplot_name][line_name].flatten() != 0)
+                    #
+                    # self.xs[subplot_name][line_name] = self.xs[subplot_name][line_name].flatten()[indices].reshape((-1, self.number_of_runs))
+                    # self.ys[subplot_name][line_name] = self.ys[subplot_name][line_name].flatten()[indices].reshape((-1, self.number_of_runs))
 
     def calculate_mean_and_std(self):
         """
@@ -191,7 +224,7 @@ class FitnessPlots:
                     colors[line_name] = rainbow[rainbow_index]
                     rainbow_index = (rainbow_index+1)%len(rainbow)
                 if len(self.ys[subplot_name][line_name]) > 0:
-                    if not self.hline is None:
+                    if not self.hline is None and not self.is_tracking_circles():
                         subax.axhline(y = self.hline, color = 'black', linestyle = '--')
                     subax.plot(self.xs_mean[subplot_name][line_name], self.ys_mean[subplot_name][line_name],
                              label=line_name, color=colors[line_name])

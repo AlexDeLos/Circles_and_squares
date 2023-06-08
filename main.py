@@ -335,10 +335,10 @@ def experiment4():
     Shows several plots for different `strategy` and `population_size`
     """
     circles = 10
-    runner = CirclesInASquare(circles, plot_sols=False)
-    for strategy in [Strategy.SINGLE_VARIANCE, Strategy.MULTIPLE_VARIANCE, Strategy.FULL_VARIANCE]:
+    runner = CirclesInASquare(circles, plot_sols=False, number_of_runs=2)
+    for strategy in [Strategy.SINGLE_VARIANCE]:
         runner.fitness_plots.set_subplot(strategy.name)
-        for population_size in [10, 30, 60, 100]:
+        for population_size in [1]:
             runner.fitness_plots.set_line(f"Population size = {population_size}")
             runner.run_evolution_strategies(generations=1000, num_children=1, max_age=1000,
                                             population_size=population_size,
@@ -583,9 +583,27 @@ def plot_warm_start_solution():
     plt.show()
 
 
+def experiment17():
+    """
+    Plotting number of circles against best fitness
+    """
+    runner = CirclesInASquare(10, plot_sols=False, save_sols=False, number_of_runs=2)
+    for generations in [1]:
+        runner.fitness_plots.set_subplot(f"Fitness of Generation {generations}", x_variable=TrackableVariable.NUMBER_OF_CIRCLES, y_variable=TrackableVariable.BEST_FITNESS)
+        for (name, use_warm_start) in [("Random Initialization", False), ("Grid Warm Start", True), ("Honeycomb Warm Start", 2)]:
+            #todo: distinguish grid and honeycomb warm start
+            runner.fitness_plots.set_line(name)
+            for n_circles in range(4, 20):
+                runner.n_circles = n_circles
+                runner.run_evolution_strategies(generations=generations, num_children=2, max_age=1000000, population_size=200,
+                                                strategy=Strategy.SINGLE_VARIANCE,
+                                                forces_config=ForcesConfig(force_strength=0.01, mutation_rate=1, force_epsilon=0),
+                                                use_warm_start=use_warm_start, mutation_rate=0.1)
+    runner.fitness_plots.show()
+
 if __name__ == "__main__":
     # NOTE: locally create an empty "results" folder in the root of the repo
     # experiment6()
     # plot_warm_start_solution()
     # experiment14()
-    main()
+    experiment17()
