@@ -144,13 +144,16 @@ class CirclesInASquare:
             0.306153985300332915214516914060,
             0.300462606288665774426601772290,
             0.289541991994981660261698764510,
-            0.286611652351681559449894454738
+            0.286611652351681559449894454738,
+            100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100,
+            100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100,
+            100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100,
+            100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100,
         ]
-
         return values_to_reach[self.n_circles - 2]
 
     def run_evolution_strategies(self, generations=1000, num_children=1, max_age=0, strategy=Strategy.SINGLE_VARIANCE,
-                                 population_size=30, max_evaluations=1e5, use_warm_start=True, forces_config=None,
+                                 population_size=30, max_evaluations=1e5, use_warm_start=3, forces_config=None,
                                  mutation_rate=1):
         if self.plot_best_sol or self.save_sols:
             # quick and dirty way to reset the plot when the same runner is reused with new parameters
@@ -164,7 +167,6 @@ class CirclesInASquare:
 
         for current_run in range(self.number_of_runs):
             self.fitness_plots.set_run(current_run)
-
             self.evopy = EvoPy(
                 circles_in_a_square if self.n_circles < 12 else circles_in_a_square_scipy,  # Fitness function
                 self.n_circles * 2,  # Number of parameters
@@ -179,7 +181,7 @@ class CirclesInASquare:
                 num_children=num_children,
                 max_age=max_age,
                 strategy=strategy,
-                warm_start=self.get_warm_start(population_size) if use_warm_start else None,
+                warm_start=self.get_warm_start(population_size, use_warm_start) if bool(use_warm_start) else None,
                 forces_config=self.forces_config,
                 mutation_rate=mutation_rate
             )
@@ -201,12 +203,22 @@ class CirclesInASquare:
             x = int((x - newD) / base)
         return newNumber
 
-    def get_warm_start(self, population_size):
+    def get_warm_start(self, population_size, use_warm_start=3):
         """
         Returns a set of positions in cordinates
         """
+        if use_warm_start == 3:
+            warm_start_func = \
+                self.get_warm_start_individual() \
+                if self.n_circles ** 0.5 == int(self.n_circles ** 0.5) else \
+                self.get_warm_start_individual_honey_comb()
+        else:
+            warm_start_func = \
+                self.get_warm_start_individual_honey_comb() \
+                if use_warm_start == 1 else \
+                self.get_warm_start_individual()
         return np.asarray([
-            self.get_warm_start_individual() if self.n_circles < 6 else self.get_warm_start_individual_honey_comb()
+            warm_start_func
             for _ in range(population_size)
         ])
 
@@ -587,19 +599,26 @@ def experiment17():
     """
     Plotting number of circles against best fitness
     """
-    runner = CirclesInASquare(10, plot_sols=False, save_sols=False, number_of_runs=2)
-    for generations in [1]:
-        runner.fitness_plots.set_subplot(f"Fitness of Generation {generations}", x_variable=TrackableVariable.NUMBER_OF_CIRCLES, y_variable=TrackableVariable.BEST_FITNESS)
-        for (name, use_warm_start) in [("Random Initialization", False), ("Grid Warm Start", True), ("Honeycomb Warm Start", 2)]:
-            #todo: distinguish grid and honeycomb warm start
+    runner = CirclesInASquare(10, plot_sols=False, save_sols=False, number_of_runs=10)
+    for generations in [10000000000000000000]:
+        runner.fitness_plots.set_subplot(f"Fitness of Generation {generations}",
+                                         x_variable=TrackableVariable.NUMBER_OF_CIRCLES,
+                                         y_variable=TrackableVariable.BEST_FITNESS)
+        for (name, use_warm_start) in [("Random Initialization", False), ("Honeycomb Warm Start", 1),
+                                       ("Grid Warm Start", 2)]:
+            # todo: distinguish grid and honeycomb warm start
             runner.fitness_plots.set_line(name)
-            for n_circles in range(4, 20):
+            for n_circles in range(4, 40):
+                print('n = ', n_circles)
                 runner.n_circles = n_circles
-                runner.run_evolution_strategies(generations=generations, num_children=2, max_age=1000000, population_size=200,
+                runner.run_evolution_strategies(generations=generations, num_children=2, max_age=1000000,
+                                                population_size=200,
                                                 strategy=Strategy.SINGLE_VARIANCE,
-                                                forces_config=ForcesConfig(force_strength=0.01, mutation_rate=1, force_epsilon=0),
+                                                forces_config=ForcesConfig(force_strength=0.01, mutation_rate=1,
+                                                                           force_epsilon=0),
                                                 use_warm_start=use_warm_start, mutation_rate=0.1)
     runner.fitness_plots.show()
+
 
 if __name__ == "__main__":
     # NOTE: locally create an empty "results" folder in the root of the repo
