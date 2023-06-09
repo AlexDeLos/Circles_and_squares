@@ -203,7 +203,7 @@ class CirclesInASquare:
             x = int((x - newD) / base)
         return newNumber
 
-    def get_warm_start(self, population_size, use_warm_start=1):
+    def get_warm_start(self, population_size, use_warm_start=3):
         """
         Returns a set of positions in cordinates
         """
