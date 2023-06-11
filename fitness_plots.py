@@ -2,9 +2,9 @@ import pickle
 from math import ceil
 import matplotlib.pyplot as plt
 import numpy as np
-
 from evopy import ProgressReport
 from enum import Enum
+
 class TrackableVariable(Enum):
     GENERATIONS = "Generations",
     EVALUATIONS = "Evalutions",
@@ -19,10 +19,11 @@ class FitnessPlots:
     """
     BACKUP_FILENAME = "fitness_plots.backup"
 
-    def __init__(self, number_of_runs):
+    def __init__(self, number_of_runs, hline=None):
         self.current_index = 0
         self.current_run = 0
         self.number_of_runs = number_of_runs
+        self.hline = hline
 
         self.current_subplot = "Default"
         self.current_line = "Default"
@@ -160,8 +161,6 @@ class FitnessPlots:
                 self.xs_std[subplot_name][line_name][indices] = 0
                 self.ys_std[subplot_name][line_name][indices] = 0
 
-
-
     def show(self, filename=BACKUP_FILENAME, number_of_error_bars=float("inf")):
         """
         Shows all subplots in a square layout
@@ -192,6 +191,8 @@ class FitnessPlots:
                     colors[line_name] = rainbow[rainbow_index]
                     rainbow_index = (rainbow_index+1)%len(rainbow)
                 if len(self.ys[subplot_name][line_name]) > 0:
+                    if not self.hline is None:
+                        subax.axhline(y = self.hline, color = 'black', linestyle = '--')
                     subax.plot(self.xs_mean[subplot_name][line_name], self.ys_mean[subplot_name][line_name],
                              label=line_name, color=colors[line_name])
                     subax.fill_between(x=self.xs_mean[subplot_name][line_name],
@@ -205,7 +206,7 @@ class FitnessPlots:
                     #                label=line_name, color=colors[line_name])
                     subax.legend() #legend per subplot
                     y_min = min(y_min, self.ys[subplot_name][line_name].min())
-                    y_max = max(y_max, self.ys[subplot_name][line_name].max())
+                    y_max = max(y_max, self.ys[subplot_name][line_name].max(), self.hline*1.001)
         plt.legend() #1 legend for all subplots
         plt.setp(ax, ylim=[y_min, y_max])
         plt.show()

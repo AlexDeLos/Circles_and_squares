@@ -1,3 +1,5 @@
+from enum import Enum
+
 import numpy as np
 from matplotlib import pyplot as plt
 from sklearn.metrics.pairwise import euclidean_distances
@@ -7,11 +9,19 @@ from sklearn.preprocessing import normalize
 class ForcesConfig:
     SAFE_DIVISION_EPSILON = 1e-8
 
-    def __init__(self, force_strength=0.2, mutation_rate=1, probability_to_apply_forces=1, number_of_neighbours=1):
-        self.force_strength = force_strength
-        self.mutation_rate = mutation_rate
-        self.probability_to_apply_forces = probability_to_apply_forces
-        self.number_of_neighbours = number_of_neighbours
+    class Strategy(Enum):
+        SINGLE_FORCE_SCALES = 1,        # 1 scale factor for all forces
+        MULTIPLE_FORCE_SCALES = 2       # n scale factors, 1 per circle
+
+    def __init__(self, force_strength=0.2, mutation_rate=1, probability_to_apply_forces=1,
+                 number_of_neighbours=1, strategy=Strategy.SINGLE_FORCE_SCALES,
+                 force_epsilon=0.0000001):
+        self.force_strength = force_strength                                #initial force_strength
+        self.mutation_rate = mutation_rate                                  #probability to rescale the force_strength
+        self.probability_to_apply_forces = probability_to_apply_forces      #probability to ignore a force
+        self.number_of_neighbours = number_of_neighbours                    #number of nearest neighbours to base the forces on
+        self.strategy = strategy                                            #decides how to mutate the force strengths
+        self.force_epsilon = force_epsilon                                  #minimum force scale
 
     def calculate_forces(self, genotype):
         """

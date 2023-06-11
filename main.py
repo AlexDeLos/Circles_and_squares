@@ -52,7 +52,8 @@ def circles_in_a_square(individual):
 
 
 class CirclesInASquare:
-    def __init__(self, n_circles, output_statistics=False, plot_sols=False, print_sols=False, save_sols=False, number_of_runs=1):
+    def __init__(self, n_circles, output_statistics=False, plot_sols=False, print_sols=False, save_sols=False,
+                 number_of_runs=1):
         self.evopy = None
         self.print_sols = print_sols
         self.output_statistics = output_statistics
@@ -71,7 +72,7 @@ class CirclesInASquare:
             self.statistics_header()
 
         self.number_of_runs = number_of_runs
-        self.fitness_plots = FitnessPlots(number_of_runs)
+        self.fitness_plots = FitnessPlots(number_of_runs, hline=self.get_target())
 
     def set_up_plot(self):
         self.fig, self.ax = plt.subplots()
@@ -92,7 +93,8 @@ class CirclesInASquare:
             formatted_time = str(report.time_elapsed).split(".")[0] + "s"
             output = "{:>10s} {:>10d} {:>11d} {:>12.8f} {:>12.8f} {:>12.8f}".format(formatted_time, report.generation,
                                                                                     report.evaluations,
-                                                                                    report.best_fitness, report.avg_fitness,
+                                                                                    report.best_fitness,
+                                                                                    report.avg_fitness,
                                                                                     report.std_fitness)
 
             if self.print_sols:
@@ -105,7 +107,7 @@ class CirclesInASquare:
             self.ax.scatter(points[:, 0], points[:, 1], clip_on=False, color="black")
             if not self.forces_config is None:
                 report.best_individual.plot_distribution_mean()
-                #plot_forces(points, strength=report.best_individual.force_strength)
+                # plot_forces(points, strength=report.best_individual.force_strength)
             self.ax.set_xlim((0, 1))
             self.ax.set_ylim((0, 1))
             self.ax.set_title(f"Best solution in generation {report.generation} (Fitness {report.best_fitness})")
@@ -113,7 +115,8 @@ class CirclesInASquare:
                 self.fig.canvas.draw()
                 self.fig.canvas.flush_events()
             if self.save_sols and (report.generation == 0 or report.is_final_report):
-                plt.savefig(f"results/{self.fitness_plots.get_current_state().replace('.', '').replace('/', '')}@Generation{report.generation}")
+                plt.savefig(
+                    f"results/{self.fitness_plots.get_current_state().replace('.', '').replace('/', '')}@Generation{report.generation}")
 
         self.add_to_fitness_plots(report)
 
@@ -144,12 +147,13 @@ class CirclesInASquare:
             0.286611652351681559449894454738
         ]
 
-        return 100 #values_to_reach[self.n_circles - 2]
+        return values_to_reach[self.n_circles - 2]
 
     def run_evolution_strategies(self, generations=1000, num_children=1, max_age=0, strategy=Strategy.SINGLE_VARIANCE,
-                                 population_size=30, max_evaluations=1e5, use_warm_start = True, forces_config=None, mutation_rate=1):
+                                 population_size=30, max_evaluations=1e5, use_warm_start=True, forces_config=None,
+                                 mutation_rate=1):
         if self.plot_best_sol or self.save_sols:
-            #quick and dirty way to reset the plot when the same runner is reused with new parameters
+            # quick and dirty way to reset the plot when the same runner is reused with new parameters
             self.set_up_plot()
 
         callback = self.statistics_callback
@@ -169,14 +173,15 @@ class CirclesInASquare:
                 generations=generations,
                 population_size=population_size,
                 bounds=(0, 1),
-                target_fitness_value=self.get_target(),
+                target_fitness_value=self.get_target() + 100,
+                # Don't stop at the target fitness_value, this ruins the plot
                 max_evaluations=max_evaluations,
                 num_children=num_children,
                 max_age=max_age,
                 strategy=strategy,
-                warm_start = self.getWarmStart(population_size) if use_warm_start else None,
-                forces_config = self.forces_config,
-                mutation_rate = mutation_rate
+                warm_start=self.getWarmStart(population_size) if use_warm_start else None,
+                forces_config=self.forces_config,
+                mutation_rate=mutation_rate
             )
 
             best_solutions.append(self.evopy.run())
@@ -188,46 +193,77 @@ class CirclesInASquare:
             return best_solutions[0]
         return best_solutions
 
-    def toBaseN(self, x:int, base:int):
+    def toBaseN(self, x: int, base: int):
         newNumber = []
         while not x == 0:
-            newD = x%base
-            newNumber.insert(0,newD)
-            x = int((x -newD)/base)
+            newD = x % base
+            newNumber.insert(0, newD)
+            x = int((x - newD) / base)
         return newNumber
 
-    def getWarmStart(self, population_size):
+    def get_warm_start(self, population_size):
         """
         Returns a set of positions in cordinates
         """
         return np.asarray([
-            self.getWarmStartIndividual()
+            self.get_warm_start_individual() if self.n_circles < 6 else self.get_warm_start_individual_honey_comb()
             for _ in range(population_size)
         ])
 
-    def getWarmStartIndividual(self):
-        n = int(self.n_circles**(1/2)) # how many we can fit in each grid cleanly
+    def get_warm_start_individual(self):
+        n = int(self.n_circles ** (1 / 2))  # how many we can fit in each grid cleanly
         result = []
-        fun = lambda x: int(x)/(n-1)
-        for el in range(n**2):
-            i = self.toBaseN(el,n) #turn it to base whatever
+        fun = lambda x: int(x) / (n - 1)
+        for el in range(n ** 2):
+            i = self.toBaseN(el, n)  # turn it to base whatever
             while len(i) < 2:
-                i.insert(0,'0')
-            result.append(list(map(fun,i)))
+                i.insert(0, '0')
+            result.append(list(map(fun, i)))
 
         # fill in the rest:
         while len(result) < self.n_circles:
-            result.append([np.random.uniform(),np.random.uniform()])
+            result.append([np.random.uniform(), np.random.uniform()])
 
         # transform to the format they should be
         result = sum(result, [])
 
         # add random noise to it
-        result = result + np.random.normal(loc=0, scale=1/(10*(n-1)), size=self.n_circles*2)
+        result = result + np.random.normal(loc=0, scale=1 / (10 * (n - 1)), size=self.n_circles * 2)
         result = np.clip(result, 0, 1)
 
         return result
 
+    def get_warm_start_individual_honey_comb(self):
+        """
+        Function to create a warm start for an individual following the honeycomb pattern.
+        """
+        num_columns = math.floor(self.n_circles ** 0.5)
+        # The `ceil` here ensures there is always enough room for all the points,
+        # sometimes there is room leftover though.
+        # TODO: Think about if this is preferred over making less honeycombs and randomly adding leftover points.
+        num_rows = math.ceil(self.n_circles / num_columns)
+
+        margin_x = 1 / (num_columns - 0.5)
+        margin_y = 1 / (num_rows - 1)
+
+        result = []
+        for i in range(self.n_circles):
+            # The row the new point will be placed
+            row = int(len(result) / num_columns)
+
+            # The coordinates of the new point
+            y = 1 - row * margin_y
+            x = (i % num_columns) * margin_x
+            # If we are on an uneven row, add a bit of margin
+            if (row % 2) == 1:
+                x += 0.5 * margin_x
+
+            result.append([x, y])
+
+        result = sum(result, [])
+        result += np.random.normal(loc=0, scale=0.1 * margin_x, size=self.n_circles * 2)
+        result = np.clip(result, 0, 1)
+        return result
 
 
 def main():
@@ -237,18 +273,20 @@ def main():
     circles = 10
     runner = CirclesInASquare(circles, plot_sols=True, output_statistics=True)
 
-    runner.run_evolution_strategies(generations=1000000, num_children=2,
-                                    max_age=1000000, population_size=75,
+    runner.run_evolution_strategies(generations=1000000, num_children=3,
+                                    max_age=1000000, population_size=100,
                                     strategy=Strategy.SINGLE_VARIANCE,
                                     forces_config=ForcesConfig(force_strength=0.01,
                                                                number_of_neighbours=1),
-                                    use_warm_start=True, mutation_rate=1)
+                                    use_warm_start=True, mutation_rate=0.1)
+
 
 def fitness_plots_from_backup(number_of_error_bars=float("inf")):
     circles = 10
     runner = CirclesInASquare(circles)
     runner.fitness_plots = FitnessPlots.from_backup()
     runner.fitness_plots.show(number_of_error_bars=number_of_error_bars)
+
 
 def experiment1():
     """
@@ -302,10 +340,10 @@ def experiment4():
         runner.fitness_plots.set_subplot(strategy.name)
         for population_size in [10, 30, 60, 100]:
             runner.fitness_plots.set_line(f"Population size = {population_size}")
-            runner.run_evolution_strategies(generations=1000, num_children=1, max_age=1000, population_size=population_size,
+            runner.run_evolution_strategies(generations=1000, num_children=1, max_age=1000,
+                                            population_size=population_size,
                                             strategy=strategy)
     runner.fitness_plots.show()
-
 
 
 def experiment5():
@@ -318,8 +356,9 @@ def experiment5():
         runner.fitness_plots.set_subplot(strategy.name)
         for population_size in [10, 30, 60, 100]:
             runner.fitness_plots.set_line(f"Population size = {population_size}")
-            runner.run_evolution_strategies(generations=1000, num_children=1, max_age=1000, population_size=population_size,
-                                            strategy=strategy, use_warm_start = True)
+            runner.run_evolution_strategies(generations=1000, num_children=1, max_age=1000,
+                                            population_size=population_size,
+                                            strategy=strategy, use_warm_start=True)
     runner.fitness_plots.show()
 
 
@@ -336,8 +375,9 @@ def experiment6():
             runner.fitness_plots.set_subplot(f"Random Initialization")
         for population_size in [50]:
             runner.fitness_plots.set_line(f"Population Size = {population_size}")
-            runner.run_evolution_strategies(generations=1000000, num_children=4, max_age=1000000, population_size=population_size,
-                                            strategy=Strategy.SINGLE_VARIANCE, use_warm_start= use_warm_start)
+            runner.run_evolution_strategies(generations=1000000, num_children=4, max_age=1000000,
+                                            population_size=population_size,
+                                            strategy=Strategy.SINGLE_VARIANCE, use_warm_start=use_warm_start)
     runner.fitness_plots.show()
 
 
@@ -355,8 +395,9 @@ def experiment7():
             else:
                 runner.fitness_plots.set_line(f"Random Initialization")
             runner.run_evolution_strategies(generations=1000000, num_children=4, max_age=1000000, population_size=100,
-                                            strategy=strategy, use_warm_start= use_warm_start)
+                                            strategy=strategy, use_warm_start=use_warm_start)
     runner.fitness_plots.show()
+
 
 def experiment8():
     """
@@ -374,8 +415,9 @@ def experiment8():
             runner.run_evolution_strategies(generations=100, num_children=2, max_age=1000000, population_size=50,
                                             strategy=Strategy.SINGLE_VARIANCE,
                                             forces_config=ForcesConfig(force_strength=0.01),
-                                            use_warm_start= use_warm_start)
+                                            use_warm_start=use_warm_start)
     runner.fitness_plots.show()
+
 
 def experiment9():
     """
@@ -383,15 +425,17 @@ def experiment9():
     """
     circles = 10
     runner = CirclesInASquare(circles, plot_sols=False, save_sols=False, number_of_runs=10)
-    for population_size in [25,50,75]:
+    for population_size in [25, 50, 75]:
         runner.fitness_plots.set_subplot(f"Population Size = {str(population_size)}")
-        for mutation_rate in [0.1, 0.3, 1]:
+        for mutation_rate in [0, 0.1, 0.3, 1]:
             runner.fitness_plots.set_line(f"mutation_rate = {str(mutation_rate)}")
-            runner.run_evolution_strategies(generations=100, num_children=2, max_age=1000000, population_size=population_size,
+            runner.run_evolution_strategies(generations=100, num_children=2, max_age=1000000,
+                                            population_size=population_size,
                                             strategy=Strategy.SINGLE_VARIANCE,
                                             forces_config=ForcesConfig(force_strength=0.01),
-                                            use_warm_start= True, mutation_rate=mutation_rate)
+                                            use_warm_start=True, mutation_rate=mutation_rate)
     runner.fitness_plots.show()
+
 
 def experiment10():
     """
@@ -408,8 +452,9 @@ def experiment10():
                                             forces_config=ForcesConfig(force_strength=force_strength,
                                                                        mutation_rate=forces_mutation_rate,
                                                                        number_of_neighbours=1),
-                                            use_warm_start= True, mutation_rate=1)
+                                            use_warm_start=True, mutation_rate=1)
     runner.fitness_plots.show()
+
 
 def experiment11():
     """
@@ -426,7 +471,7 @@ def experiment11():
                                             forces_config=ForcesConfig(force_strength=force_strength,
                                                                        mutation_rate=forces_mutation_rate,
                                                                        number_of_neighbours=1),
-                                            use_warm_start= True, mutation_rate=1)
+                                            use_warm_start=True, mutation_rate=1)
     runner.fitness_plots.show()
 
 
@@ -436,13 +481,15 @@ def experiment12():
     """
     circles = 10
     runner = CirclesInASquare(circles, plot_sols=False)
-    for population_size in [25,50,75]:
+    for population_size in [25, 50, 75]:
         runner.fitness_plots.set_subplot(population_size)
-        for num_children in [1,2,3,4]:
+        for num_children in [1, 2, 3, 4]:
             runner.fitness_plots.set_line(f"Number of children = {num_children}")
-            runner.run_evolution_strategies(generations=1000, num_children=num_children, max_age=1000, population_size=population_size,
+            runner.run_evolution_strategies(generations=1000, num_children=num_children, max_age=1000,
+                                            population_size=population_size,
                                             strategy=Strategy.SINGLE_VARIANCE)
     runner.fitness_plots.show()
+
 
 def experiment13():
     """
@@ -450,11 +497,12 @@ def experiment13():
     """
     circles = 10
     runner = CirclesInASquare(circles, plot_sols=False)
-    for num_children in [1,2,3,4]:
+    for num_children in [1, 2, 3, 4]:
         runner.fitness_plots.set_subplot(num_children)
-        for population_size in [25,50,75]:
+        for population_size in [25, 50, 75]:
             runner.fitness_plots.set_line(f"Population Size = {population_size}")
-            runner.run_evolution_strategies(generations=1000, num_children=num_children, max_age=1000, population_size=population_size,
+            runner.run_evolution_strategies(generations=100000, num_children=num_children, max_age=100000,
+                                            population_size=population_size,
                                             strategy=Strategy.SINGLE_VARIANCE)
     runner.fitness_plots.show()
 
@@ -522,8 +570,89 @@ def experiment15():
 
 
 
+def experiment14():
+    """
+    `mutation_rate` on various n_circles`
+    """
+    circles = 2
+    runner = CirclesInASquare(circles, plot_sols=False, save_sols=False, number_of_runs=10)
+    for n_circles in [11, 17]:
+        runner.n_circles = n_circles
+        runner.fitness_plots.set_subplot(f"Number Of Circles = {str(n_circles)}")
+        for mutation_rate in [0, 0.1, 0.3, 1]:
+            runner.fitness_plots.set_line(f"mutation_rate = {str(mutation_rate)}")
+            runner.run_evolution_strategies(generations=100, num_children=2, max_age=1000000, population_size=75,
+                                            strategy=Strategy.SINGLE_VARIANCE,
+                                            forces_config=ForcesConfig(force_strength=0.01, mutation_rate=1),
+                                            use_warm_start=True, mutation_rate=mutation_rate)
+    runner.fitness_plots.show()
+
+
+def experiment15():
+    """
+    Tuning `force_epsilon`
+    Conclusion: doesn't really matter
+    """
+    circles = 10
+    runner = CirclesInASquare(circles, plot_sols=False, save_sols=False, number_of_runs=10)
+    for n_circles in [10]:
+        runner.n_circles = n_circles
+        runner.fitness_plots.set_subplot(f"Number Of Circles = {str(n_circles)}")
+        for force_epsilon in [0.001, 0.00001, 0.0000001, 0.000000001]:
+            runner.fitness_plots.set_line(f"force_epsilon = {str(force_epsilon)}")
+            runner.run_evolution_strategies(generations=100, num_children=2, max_age=1000000, population_size=75,
+                                            strategy=Strategy.SINGLE_VARIANCE,
+                                            forces_config=ForcesConfig(force_strength=0.01, mutation_rate=1,
+                                                                       force_epsilon=force_epsilon),
+                                            use_warm_start=True, mutation_rate=0.1)
+    runner.fitness_plots.show()
+
+
+def experiment16():
+    """
+    [Single force scales] vs [Multiple force scales] vs [No forces]
+    """
+    circles = 10
+    runner = CirclesInASquare(circles, plot_sols=False, save_sols=True, number_of_runs=20)
+    for n_circles in [10]:
+        runner.n_circles = n_circles
+        runner.fitness_plots.set_subplot(f"Number Of Circles = {str(n_circles)}")
+        for name, strategy in [("Single Force Scale", ForcesConfig.Strategy.SINGLE_FORCE_SCALES),
+                               ("Multiple Force Scales", ForcesConfig.Strategy.MULTIPLE_FORCE_SCALES),
+                               ("Single Variance Mutation (No Forces)", None)]:
+            runner.fitness_plots.set_line(name)
+            if strategy is None:
+                runner.run_evolution_strategies(generations=100000, num_children=3, max_age=100000, population_size=75,
+                                                strategy=Strategy.SINGLE_VARIANCE,
+                                                use_warm_start=True, mutation_rate=0.9)
+            else:
+                runner.run_evolution_strategies(generations=100000, num_children=3, max_age=100000, population_size=75,
+                                                strategy=Strategy.SINGLE_VARIANCE,
+                                                forces_config=ForcesConfig(force_strength=0.01, mutation_rate=0.9,
+                                                                           strategy=strategy),
+                                                use_warm_start=True, mutation_rate=0.1)
+    runner.fitness_plots.show()
+
+
+def plot_warm_start_solution():
+    """
+    Helper function used to test warm start functions.
+    """
+    runner = CirclesInASquare(12)
+    population_size = 1
+    individual = runner.get_warm_start(population_size)[0]
+    x0, x1 = np.reshape(individual, (-1, 2)).transpose()
+    plt.scatter(x0, x1, color='black')
+    plt.show()
+
+
 if __name__ == "__main__":
     # NOTE: locally create an empty "results" folder in the root of the repo
+<<<<<<< HEAD
     experiment15()
     #fitness_plots_from_backup(100)
     # main()
+=======
+    # experiment6()
+    plot_warm_start_solution()
+>>>>>>> 4e02a44515d3c3ec71b9e5345ee967d0daa0c593
