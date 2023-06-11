@@ -458,9 +458,72 @@ def experiment13():
                                             strategy=Strategy.SINGLE_VARIANCE)
     runner.fitness_plots.show()
 
+def experiment14():
+#Create heatmap for different population sizes and number of children
+    circles = 10   
+    runner = CirclesInASquare(circles, plot_sols=False)
+    for population_size in [25,50,75]:
+        for num_children in [1,2,3,4]:
+            runner.fitness_plots.set_subplot(f"Population Size = {population_size}, Number of Children = {num_children}")
+            runner.run_evolution_strategies(generations=1000, num_children=num_children, max_age=1000, population_size=population_size,
+                                            strategy=Strategy.SINGLE_VARIANCE)
+    runner.fitness_plots.show()
+
+
+
+def experiment15():
+    """
+    Shows a heatmap for different `num_children` and `population_size` with fitness as the metric
+    """
+    circles = 10
+    fitness_data = np.zeros((10, 10))  # Create an empty array to store fitness values
+
+    runner = CirclesInASquare(circles, plot_sols=False)
+
+    # Iterate over different `num_children` values
+    for i, num_children in enumerate([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]):
+        # Iterate over different `population_size` values
+        for j, population_size in enumerate([20, 30, 40, 50, 60, 70, 80, 90, 100, 110]):
+            # Run evolution strategies
+            fitness = runner.run_evolution_strategies(generations=1000, num_children=num_children, max_age=1000,
+                                            population_size=population_size, strategy=Strategy.SINGLE_VARIANCE)
+
+            # Store fitness value in the data array
+            fitness_data[i, j] = circles_in_a_square(fitness)
+
+    # Create a heatmap using the fitness data
+    fig, ax = plt.subplots()
+    im = ax.imshow(fitness_data, cmap='hot', interpolation='nearest')
+
+    # Set x-axis and y-axis labels
+    ax.set_xticks(np.arange(len([20, 30, 40, 50, 60, 70, 80, 90, 100, 110])))
+    ax.set_yticks(np.arange(len([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])))
+    ax.set_xticklabels([20, 30, 40, 50, 60, 70, 80, 90, 100, 110])
+    ax.set_yticklabels([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
+
+    # Rotate the x-axis tick labels and set label positions
+    plt.setp(ax.get_xticklabels(), rotation=45, ha="right", rotation_mode="anchor")
+
+    # Loop over data dimensions and create text annotations
+    for i in range(len([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])):
+        for j in range(len([20, 30, 40, 50, 60, 70, 80, 90, 100, 110])):
+            text = ax.text(j, i, round(fitness_data[i, j], 5), ha="center", va="center", color="w")
+
+    # Set title and colorbar
+    ax.set_title("Fitness Heatmap")
+    plt.colorbar(im)
+
+    plt.show()
+
+
+
+
+
+
+
 
 if __name__ == "__main__":
     # NOTE: locally create an empty "results" folder in the root of the repo
-    #experiment10()
-    fitness_plots_from_backup(100)
+    experiment15()
+    #fitness_plots_from_backup(100)
     # main()
