@@ -623,6 +623,7 @@ def experiment18():
     """
     Shows a heatmap for different `num_children` and `population_size` with fitness as the metric
     """
+    n_runs = 20
     circles = 10
     fitness_data = np.zeros((10, 10))  # Create an empty array to store fitness values
 
@@ -634,18 +635,19 @@ def experiment18():
         for j, population_size in enumerate([20, 30, 40, 50, 60, 70, 80, 90, 100, 110]):
             total_fitness = 0.0  # Initialize total fitness
 
-            # Run evolution strategies for 20 runs
-            for _ in range(20):
+            # Run evolution strategies for n_runs runs
+            for _ in range(n_runs):
                 # Perform a single run
-                fitness = runner.run_evolution_strategies(generations=1000, num_children=num_children, max_age=1000000,
+                genotype = runner.run_evolution_strategies(generations=100000000, num_children=num_children, max_age=100000000,
                                                           population_size=population_size,
+                                                          forces_config=ForcesConfig(force_strength=0.01, mutation_rate=1),
                                                           strategy=Strategy.SINGLE_VARIANCE)
 
                 # Accumulate fitness values
-                total_fitness += circles_in_a_square(fitness)
+                total_fitness += circles_in_a_square(genotype)
 
             # Calculate average fitness
-            avg_fitness = total_fitness / 20
+            avg_fitness = total_fitness / n_runs
 
             # Store average fitness value in the data array
             fitness_data[i, j] = avg_fitness
