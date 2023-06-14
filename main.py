@@ -640,6 +640,7 @@ def experiment18():
                 # Perform a single run
                 genotype = runner.run_evolution_strategies(generations=100000000, num_children=num_children, max_age=100000000,
                                                           population_size=population_size,
+                                                          mutation_rate=0,
                                                           forces_config=ForcesConfig(force_strength=0.01, mutation_rate=1),
                                                           strategy=Strategy.SINGLE_VARIANCE)
 
