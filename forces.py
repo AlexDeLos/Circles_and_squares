@@ -82,62 +82,6 @@ class ForcesConfig:
         weights = normalize(1 / distances)
         return np.einsum('ijk,ij->ik', differences, weights).flatten()
 
-        # if self.strategy == ForcesParams.Strategy.ONE_PER_INDIVIDUAL:
-        #     self.length = 1
-        #     self.force_strengths = [self.initial_force_strength]
-        # elif self.strategy == ForcesParams.Strategy.ONE_PER_CIRCLE:
-        #     self.length = n_circles
-        #     self.force_strengths = [self.initial_force_strength]*n_circles
-        # else:
-        #     raise ValueError("Provided strategy parameter was not an instance of ForcesParams.Strategy")
-
-    # , strategy=Strategy.ONE_PER_INDIVIDUAL
-    # class Strategy(Enum):
-    #     """Enum used to distinguish different types of strategies for the forces pararms.
-    #
-    #     These strategies are used to determine the mechanism which each individual can use to control
-    #     its own mutability. The three strategies which are included are:
-    #
-    #     - ONE_PER_INDIVIDUAL: 1 force strength per individual
-    #     - ONE_PER_CIRCLE: n force strengths per individual. 1 per circle
-    #     """
-    #     ONE_PER_INDIVIDUAL = 1
-    #     ONE_PER_CIRCLE = 2
-    #
-    # def get_force_strength(self):
-    #     return self.initial_force_strength
-    #     #todo
-    #
-    #     # if self.strategy == ForcesParams.Strategy.ONE_PER_INDIVIDUAL:
-    #     #     return self.force_strengths[0]
-    #     # elif self.strategy == ForcesParams.Strategy.ONE_PER_CIRCLE:
-    #     #     #todo
-    #     #     return self.force_strengths[0]
-    #     # else:
-    #     #     raise ValueError("Provided strategy parameter was not an instance of ForcesParams.Strategy")
-    #
-    # def mutate_forces(self):
-    #     if self.strategy == ForcesParams.Strategy.ONE_PER_INDIVIDUAL:
-    #         self._mutate_forces_one_per_individual()
-    #     elif self.strategy == ForcesParams.Strategy.ONE_PER_CIRCLE:
-    #         self._mutate_forces_one_per_circle()
-    #     else:
-    #         raise ValueError("Provided strategy parameter was not an instance of ForcesParams.Strategy")
-    #
-    # def _mutate_forces_one_per_individual(self):
-    #     scale_factor = np.random.randn() * np.sqrt(1 / (2 * self.length))
-    #     self.force_strengths = max(self.force_strengths[0] * np.exp(scale_factor), self._EPSILON)
-    #
-    # def _mutate_forces_one_per_circle(self):
-    #     # todo
-    #     raise NotImplementedError("")
-    #     # global_scale_factor = np.random.randn() * np.sqrt(1 / (2 * self.length))
-    #     # scale_factors = [np.random.randn() * np.sqrt(1 / 2 * np.sqrt(self.length))
-    #     #                  for _ in range(self.length)]
-    #     # self.force_strengths = [max(np.exp(global_scale_factor + scale_factors[i])
-    #     #                 * self.force_strengths[i], self._EPSILON)
-    #     #                   for i in range(self.length)]
-
 if __name__ == "__main__":
     _genotype = np.array([
         0.4, 0,

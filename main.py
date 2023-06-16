@@ -1,3 +1,5 @@
+import pickle
+
 import matplotlib
 # import random
 
@@ -286,7 +288,7 @@ def main():
     runner = CirclesInASquare(circles, plot_sols=True, output_statistics=True)
 
     runner.run_evolution_strategies(generations=1000000, num_children=3,
-                                    max_age=1000000, population_size=100,
+                                    max_age=1000000, population_size=75,
                                     strategy=Strategy.SINGLE_VARIANCE,
                                     forces_config=ForcesConfig(force_strength=0.01,
                                                                number_of_neighbours=1),
@@ -625,20 +627,23 @@ def experiment18():
     """
     n_runs = 20
     circles = 10
-    fitness_data = np.zeros((10, 10))  # Create an empty array to store fitness values
+
+    num_children_lst = [1, 2, 3, 4, 5, 6]
+    population_size_lst = [50, 75, 100, 125, 150, 175, 200, 225, 250]
 
     runner = CirclesInASquare(circles, plot_sols=False)
 
     # Iterate over different `num_children` values
-    for i, num_children in enumerate([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]):
+    fitness_data = np.zeros((len(num_children_lst), len(population_size_lst)))
+    for i, num_children in enumerate(num_children_lst):
         # Iterate over different `population_size` values
-        for j, population_size in enumerate([20, 30, 40, 50, 60, 70, 80, 90, 100, 110]):
+        for j, population_size in enumerate(population_size_lst):
             total_fitness = 0.0  # Initialize total fitness
 
             # Run evolution strategies for n_runs runs
             for _ in range(n_runs):
                 # Perform a single run
-                genotype = runner.run_evolution_strategies(generations=100000000, num_children=num_children, max_age=100000000,
+                genotype = runner.run_evolution_strategies(generations=1000000, num_children=num_children, max_age=1000000,
                                                           population_size=population_size,
                                                           mutation_rate=0,
                                                           forces_config=ForcesConfig(force_strength=0.01, mutation_rate=1),
@@ -653,23 +658,31 @@ def experiment18():
             # Store average fitness value in the data array
             fitness_data[i, j] = avg_fitness
 
+    #from backup
+    #with open(FitnessPlots.BACKUP_FILENAME, "rb") as f:
+    #    fitness_data = pickle.load(f)
+
+    #backup
+    with open('fitness_data.backup', "wb") as f:
+        pickle.dump(fitness_data, f)
+
     # Create a heatmap using the fitness data
     fig, ax = plt.subplots()
     im = ax.imshow(fitness_data, cmap='hot', interpolation='nearest')
 
     # Set x-axis and y-axis labels
-    ax.set_xticks(np.arange(len([20, 30, 40, 50, 60, 70, 80, 90, 100, 110])))
-    ax.set_yticks(np.arange(len([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])))
-    ax.set_xticklabels([20, 30, 40, 50, 60, 70, 80, 90, 100, 110])
-    ax.set_yticklabels([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
+    ax.set_xticks(np.arange(len(population_size_lst)))
+    ax.set_yticks(np.arange(len(num_children_lst)))
+    ax.set_xticklabels(population_size_lst)
+    ax.set_yticklabels(num_children_lst)
 
     # Rotate the x-axis tick labels and set label positions
     plt.setp(ax.get_xticklabels(), rotation=45, ha="right", rotation_mode="anchor")
 
     # Loop over data dimensions and create text annotations
-    for i in range(len([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])):
-        for j in range(len([20, 30, 40, 50, 60, 70, 80, 90, 100, 110])):
-            text = ax.text(j, i, round(fitness_data[i, j], 5), ha="center", va="center", color="w")
+    for i in range(len(num_children_lst)):
+        for j in range(len(population_size_lst)):
+            ax.text(j, i, round(fitness_data[i, j], 5), ha="center", va="center", color="w")
 
     # Set title and colorbar
     ax.set_title("Fitness Heatmap")
@@ -684,4 +697,6 @@ if __name__ == "__main__":
     # experiment6()
     # plot_warm_start_solution()
     # experiment14()
-    experiment18()
+    # experiment18()
+    # main()
+    experiment16()
