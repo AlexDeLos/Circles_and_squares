@@ -1,3 +1,5 @@
+import pickle
+
 import matplotlib
 # import random
 
@@ -498,7 +500,7 @@ def experiment16():
     [Single force scales] vs [Multiple force scales] vs [No forces]
     """
     circles = 10
-    runner = CirclesInASquare(circles, plot_sols=False, save_sols=True, number_of_runs=20)
+    runner = CirclesInASquare(circles, plot_sols=False, save_sols=True, number_of_runs=1)
     for n_circles in [10]:
         runner.n_circles = n_circles
         runner.fitness_plots.set_subplot(f"Number Of Circles = {str(n_circles)}")
@@ -517,7 +519,80 @@ def experiment16():
                                                 use_warm_start= True, mutation_rate=0.1)
     runner.fitness_plots.show()
 
+def experiment18():
+    """
+    Shows a heatmap for different `num_children` and `population_size` with fitness as the metric
+    """
+    n_runs = 1
+    circles = 10
+
+    #num_children_lst = [1, 2, 3, 4, 5, 6]
+    #population_size_lst = [50, 75, 100, 125, 150, 175, 200, 225, 250]
+
+    num_children_lst = list(range(1, 8))
+    population_size_lst = list(range(50, 350, 25))
+
+    runner = CirclesInASquare(circles, plot_sols=False)
+
+    # # from backup
+    # with open('heatmap.backup', "rb") as f:
+    #    fitness_data = pickle.load(f)
+
+    # Iterate over different `num_children` values
+    fitness_data = np.zeros((len(num_children_lst), len(population_size_lst)))
+    for i, num_children in enumerate(num_children_lst):
+        # Iterate over different `population_size` values
+        for j, population_size in enumerate(population_size_lst):
+            total_fitness = 0.0  # Initialize total fitness
+
+            # Run evolution strategies for n_runs runs
+            for _ in range(n_runs):
+                # Perform a single run
+                genotype = runner.run_evolution_strategies(generations=1000000, num_children=num_children, max_age=1000000,
+                                                          population_size=population_size,
+                                                          mutation_rate=0,
+                                                          forces_config=ForcesConfig(force_strength=0.01, mutation_rate=1),
+                                                          strategy=Strategy.SINGLE_VARIANCE,
+                                                          max_evaluations=1e5)
+
+                # Accumulate fitness values
+                total_fitness += circles_in_a_square(genotype)
+
+            # Calculate average fitness
+            avg_fitness = total_fitness / n_runs
+
+            # Store average fitness value in the data array
+            fitness_data[i, j] = avg_fitness
+
+    #backup
+    with open('heatmap.backup', "wb") as f:
+        pickle.dump(fitness_data, f)
+
+    # Create a heatmap using the fitness data
+    fig, ax = plt.subplots()
+    im = ax.imshow(fitness_data, cmap='hot', interpolation='nearest')
+
+    # Set x-axis and y-axis labels
+    ax.set_xticks(np.arange(len(population_size_lst)))
+    ax.set_yticks(np.arange(len(num_children_lst)))
+    ax.set_xticklabels(population_size_lst)
+    ax.set_yticklabels(num_children_lst)
+
+    # Rotate the x-axis tick labels and set label positions
+    plt.setp(ax.get_xticklabels(), rotation=45, ha="right", rotation_mode="anchor")
+
+    # Loop over data dimensions and create text annotations
+    for i in range(len(num_children_lst)):
+        for j in range(len(population_size_lst)):
+            ax.text(j, i, round(fitness_data[i, j], 5), ha="center", va="center", color="w")
+
+    # Set title and colorbar
+    ax.set_title("Fitness Heatmap")
+    plt.colorbar(im)
+
+    plt.show()
+
 if __name__ == "__main__":
     # NOTE: locally create an empty "results" folder in the root of the repo
-    experiment16()
+    experiment18()
     #main()
