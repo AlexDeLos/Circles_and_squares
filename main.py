@@ -523,14 +523,14 @@ def experiment18():
     """
     Shows a heatmap for different `num_children` and `population_size` with fitness as the metric
     """
-    n_runs = 1
+    n_runs = 20
     circles = 10
 
     #num_children_lst = [1, 2, 3, 4, 5, 6]
     #population_size_lst = [50, 75, 100, 125, 150, 175, 200, 225, 250]
 
     num_children_lst = list(range(1, 8))
-    population_size_lst = list(range(50, 350, 25))
+    population_size_lst = list(range(25, 350, 25))
 
     runner = CirclesInASquare(circles, plot_sols=False)
 
