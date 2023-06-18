@@ -254,7 +254,6 @@ class CirclesInASquare:
         num_columns = math.floor(self.n_circles ** 0.5)
         # The `ceil` here ensures there is always enough room for all the points,
         # sometimes there is room leftover though.
-        # TODO: Think about if this is preferred over making less honeycombs and randomly adding leftover points.
         num_rows = math.ceil(self.n_circles / num_columns)
 
         margin_x = 1 / (num_columns - 0.5)
@@ -275,7 +274,7 @@ class CirclesInASquare:
             result.append([x, y])
 
         result = sum(result, [])
-        result += np.random.normal(loc=0, scale=0.1 * margin_x, size=self.n_circles * 2)
+        result += np.random.normal(loc=0, scale=0.5 * margin_x, size=self.n_circles * 2)
         result = np.clip(result, 0, 1)
         return result
 
@@ -568,16 +567,18 @@ def experiment16():
     for n_circles in [10]:
         runner.n_circles = n_circles
         runner.fitness_plots.set_subplot(f"Number Of Circles = {str(n_circles)}")
-        for name, strategy in [("Single Force Scale", ForcesConfig.Strategy.SINGLE_FORCE_SCALES),
-                               ("Multiple Force Scales", ForcesConfig.Strategy.MULTIPLE_FORCE_SCALES),
-                               ("Single Variance Mutation (No Forces)", None)]:
+        for name, strategy in [
+            ("Single Force Scale", ForcesConfig.Strategy.SINGLE_FORCE_SCALES),
+            ("Multiple Force Scales", ForcesConfig.Strategy.MULTIPLE_FORCE_SCALES),
+            ("Single Variance Mutation (No Forces)", None)
+        ]:
             runner.fitness_plots.set_line(name)
             if strategy is None:
-                runner.run_evolution_strategies(generations=100000, num_children=3, max_age=100000, population_size=75,
+                runner.run_evolution_strategies(generations=100000, num_children=1, max_age=100000, population_size=425,
                                                 strategy=Strategy.SINGLE_VARIANCE,
                                                 use_warm_start=3, mutation_rate=0.9)
             else:
-                runner.run_evolution_strategies(generations=100000, num_children=3, max_age=100000, population_size=75,
+                runner.run_evolution_strategies(generations=100000, num_children=1, max_age=100000, population_size=425,
                                                 strategy=Strategy.SINGLE_VARIANCE,
                                                 forces_config=ForcesConfig(force_strength=0.01, mutation_rate=0.9,
                                                                            strategy=strategy),
