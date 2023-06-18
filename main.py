@@ -564,7 +564,7 @@ def experiment16():
     [Single force scales] vs [Multiple force scales] vs [No forces]
     """
     circles = 10
-    runner = CirclesInASquare(circles, plot_sols=False, save_sols=True, number_of_runs=20)
+    runner = CirclesInASquare(circles, plot_sols=False, save_sols=True, number_of_runs=1)
     for n_circles in [10]:
         runner.n_circles = n_circles
         runner.fitness_plots.set_subplot(f"Number Of Circles = {str(n_circles)}")
@@ -575,13 +575,13 @@ def experiment16():
             if strategy is None:
                 runner.run_evolution_strategies(generations=100000, num_children=3, max_age=100000, population_size=75,
                                                 strategy=Strategy.SINGLE_VARIANCE,
-                                                use_warm_start=True, mutation_rate=0.9)
+                                                use_warm_start=3, mutation_rate=0.9)
             else:
                 runner.run_evolution_strategies(generations=100000, num_children=3, max_age=100000, population_size=75,
                                                 strategy=Strategy.SINGLE_VARIANCE,
                                                 forces_config=ForcesConfig(force_strength=0.01, mutation_rate=0.9,
                                                                            strategy=strategy),
-                                                use_warm_start=True, mutation_rate=0.1)
+                                                use_warm_start=3, mutation_rate=0.1)
     runner.fitness_plots.show()
 
 
