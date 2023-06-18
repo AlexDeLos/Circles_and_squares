@@ -74,7 +74,7 @@ class CirclesInASquare:
             self.statistics_header()
 
         self.number_of_runs = number_of_runs
-        self.fitness_plots = FitnessPlots(number_of_runs, hline=self.get_target())
+        self.fitness_plots = FitnessPlots(number_of_runs)
 
     def set_up_plot(self):
         self.fig, self.ax = plt.subplots()
@@ -699,7 +699,7 @@ def experiment19():
     runner = CirclesInASquare(circles, plot_sols=False, save_sols=True, number_of_runs=20)
     for n_circles in [11, 13, 17, 19]:
         runner.n_circles = n_circles
-        runner.fitness_plots.set_subplot(f"Number Of Circles = {str(n_circles)}")
+        runner.fitness_plots.set_subplot(f"Number Of Circles = {str(n_circles)}", hline=runner.get_target())
 
         runner.fitness_plots.set_line("Baseline")
         runner.run_evolution_strategies(generations=10000000, num_children=2, max_age=0, population_size=425,
