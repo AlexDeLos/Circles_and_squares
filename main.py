@@ -299,7 +299,7 @@ def fitness_plots_from_backup(number_of_error_bars=float("inf")):
     runner = CirclesInASquare(circles)
     runner.fitness_plots = FitnessPlots.from_backup()
     runner.fitness_plots.show(number_of_error_bars=number_of_error_bars)
-
+    runner.fitness_plots.print_best_results()
 
 def experiment1():
     """
@@ -691,13 +691,28 @@ def experiment18():
 
     plt.show()
 
+def experiment19():
+    """
+    Putting it all together
+    """
+    circles = 10
+    runner = CirclesInASquare(circles, plot_sols=False, save_sols=True, number_of_runs=20)
+    for n_circles in [11, 13, 17, 19]:
+        runner.n_circles = n_circles
+        runner.fitness_plots.set_subplot(f"Number Of Circles = {str(n_circles)}")
 
+        runner.fitness_plots.set_line("Baseline")
+        runner.run_evolution_strategies(generations=10000000, num_children=2, max_age=0, population_size=425,
+                                        strategy=Strategy.SINGLE_VARIANCE,
+                                        use_warm_start = False, mutation_rate=1)
+
+        runner.fitness_plots.set_line("All Improvements")
+        runner.run_evolution_strategies(generations=10000000, num_children=2, max_age=10000000, population_size=425,
+                                        strategy=Strategy.SINGLE_VARIANCE,
+                                        forces_config=ForcesConfig(force_strength=0.01, mutation_rate=1, strategy=ForcesConfig.Strategy.MULTIPLE_FORCE_SCALES),
+                                        use_warm_start= True, mutation_rate=0)
+    runner.fitness_plots.show()
 
 if __name__ == "__main__":
     # NOTE: locally create an empty "results" folder in the root of the repo
-    # experiment6()
-    # plot_warm_start_solution()
-    # experiment14()
-    # experiment18()
-    # main()
-    experiment16()
+    experiment19()

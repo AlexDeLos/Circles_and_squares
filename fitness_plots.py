@@ -244,3 +244,12 @@ class FitnessPlots:
         plt.setp(ax, ylim=[y_min, y_max])
         plt.show()
         self.save(filename)
+
+    def print_best_results(self):
+        for subplot_name in self.ys.keys():
+            for line_name in self.ys[subplot_name].keys():
+                print("---------------")
+                print("Best fitness report:")
+                print(subplot_name)
+                print(line_name)
+                print(self.ys[subplot_name][line_name].max())
