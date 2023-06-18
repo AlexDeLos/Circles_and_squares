@@ -211,16 +211,16 @@ class CirclesInASquare:
         """
         if use_warm_start == 3:
             warm_start_func = \
-                self.get_warm_start_individual() \
+                self.get_warm_start_individual \
                 if self.n_circles ** 0.5 == int(self.n_circles ** 0.5) else \
-                self.get_warm_start_individual_honey_comb()
+                self.get_warm_start_individual_honey_comb
         else:
             warm_start_func = \
-                self.get_warm_start_individual_honey_comb() \
+                self.get_warm_start_individual_honey_comb \
                 if use_warm_start == 1 else \
-                self.get_warm_start_individual()
+                self.get_warm_start_individual
         return np.asarray([
-            warm_start_func
+            warm_start_func()
             for _ in range(population_size)
         ])
 
