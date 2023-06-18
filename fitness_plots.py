@@ -19,11 +19,11 @@ class FitnessPlots:
     """
     BACKUP_FILENAME = "fitness_plots.backup"
 
-    def __init__(self, number_of_runs, hline=None):
+    def __init__(self, number_of_runs):
         self.current_index = 0
         self.current_run = 0
         self.number_of_runs = number_of_runs
-        self.hline = hline
+        self.hline = dict()
 
         self.current_subplot = "Default"
         self.current_line = "Default"
@@ -67,18 +67,21 @@ class FitnessPlots:
 
     def set_subplot(self, name,
                     x_variable: TrackableVariable = TrackableVariable.EVALUATIONS,
-                    y_variable: TrackableVariable = TrackableVariable.BEST_FITNESS):
+                    y_variable: TrackableVariable = TrackableVariable.BEST_FITNESS,
+                    hline=None):
         """
         Set the subplot
-        :param name: name of the subplot
+        :param name: name of the subplots
         :param x_variable: the x variable to track for this subplot
         :param y_variable: the y variable to track for this subplot
+        :param hline: (optional) horizontal value for this subplot
         """
         if not name in self.ys.keys():
             self.xs[name] = {self.current_line: np.zeros((1, self.number_of_runs))}
             self.ys[name] = {self.current_line: np.zeros((1, self.number_of_runs))}
         self.xvars[name] = x_variable
         self.yvars[name] = y_variable
+        self.hline[name] = hline
         self.current_subplot = name
 
     def set_line(self, name):
@@ -161,7 +164,7 @@ class FitnessPlots:
                 self.xs_std[subplot_name][line_name][indices] = 0
                 self.ys_std[subplot_name][line_name][indices] = 0
 
-    def show(self, filename=BACKUP_FILENAME, number_of_error_bars=float("inf")):
+    def show(self, filename=BACKUP_FILENAME, number_of_error_bars=float("inf"), shared_axis=False):
         """
         Shows all subplots in a square layout
         """
@@ -186,13 +189,13 @@ class FitnessPlots:
             subax.set_xlabel(self.xvars[subplot_name].value[0])
             subax.set_ylabel(self.yvars[subplot_name].value[0])
             subax.set_title(subplot_name)
+            if not self.hline[subplot_name] is None:
+                subax.axhline(y=self.hline[subplot_name], color='black', linestyle='--', label="Optimum")
             for line_name in self.ys[subplot_name].keys():
                 if not line_name in colors:
                     colors[line_name] = rainbow[rainbow_index]
                     rainbow_index = (rainbow_index+1)%len(rainbow)
                 if len(self.ys[subplot_name][line_name]) > 0:
-                    if not self.hline is None:
-                        subax.axhline(y = self.hline, color = 'black', linestyle = '--')
                     subax.plot(self.xs_mean[subplot_name][line_name], self.ys_mean[subplot_name][line_name],
                              label=line_name, color=colors[line_name])
                     subax.fill_between(x=self.xs_mean[subplot_name][line_name],
@@ -204,10 +207,20 @@ class FitnessPlots:
                     #                xerr = self.xs_std[subplot_name][line_name],
                     #                yerr = self.ys_std[subplot_name][line_name],
                     #                label=line_name, color=colors[line_name])
-                    subax.legend() #legend per subplot
-                    y_min = min(y_min, self.ys[subplot_name][line_name].min())
-                    y_max = max(y_max, self.ys[subplot_name][line_name].max(), self.hline*1.001)
-        plt.legend() #1 legend for all subplots
-        plt.setp(ax, ylim=[y_min, y_max])
+            subax.legend() #legend per subplot
+            y_min = min(y_min, self.ys[subplot_name][line_name].min())
+            y_max = max(y_max, self.ys[subplot_name][line_name].max(), self.hline[subplot_name]*1.003)
+        #plt.legend() #1 legend for all subplots
+        if shared_axis:
+            plt.setp(ax, ylim=[y_min, y_max])
         plt.show()
         self.save(filename)
+
+    def print_best_results(self):
+        for subplot_name in self.ys.keys():
+            for line_name in self.ys[subplot_name].keys():
+                print("---------------")
+                print("Best fitness report:")
+                print(subplot_name)
+                print(line_name)
+                print(self.ys[subplot_name][line_name].max())

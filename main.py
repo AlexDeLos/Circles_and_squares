@@ -73,7 +73,7 @@ class CirclesInASquare:
             self.statistics_header()
 
         self.number_of_runs = number_of_runs
-        self.fitness_plots = FitnessPlots(number_of_runs, hline=self.get_target())
+        self.fitness_plots = FitnessPlots(number_of_runs)
 
     def set_up_plot(self):
         self.fig, self.ax = plt.subplots()
@@ -134,16 +134,16 @@ class CirclesInASquare:
             0.517638090205041524697797675248,  # 8
             0.500000000000000000000000000000,  # 9
             0.421279543983903432768821760651,  # 10
-            0.398207310236844165221512929748,
-            0.388730126323020031391610191835,
-            0.366096007696425085295389370603,
-            0.348915260374018877918854409001,
-            0.341081377402108877637121191351,
-            0.333333333333333333333333333333,
-            0.306153985300332915214516914060,
-            0.300462606288665774426601772290,
-            0.289541991994981660261698764510,
-            0.286611652351681559449894454738
+            0.398207310236844165221512929748,  # 11
+            0.388730126323020031391610191835,  # 12
+            0.366096007696425085295389370603,  # 13
+            0.348915260374018877918854409001,  # 14
+            0.341081377402108877637121191351,  # 15
+            0.333333333333333333333333333333,  # 16
+            0.306153985300332915214516914060,  # 17
+            0.300462606288665774426601772290,  # 18
+            0.289541991994981660261698764510,  # 19
+            0.286611652351681559449894454738   # 20
         ]
 
         return values_to_reach[self.n_circles - 2]
@@ -251,6 +251,7 @@ def fitness_plots_from_backup(number_of_error_bars=float("inf")):
     runner = CirclesInASquare(circles)
     runner.fitness_plots = FitnessPlots.from_backup()
     runner.fitness_plots.show(number_of_error_bars=number_of_error_bars)
+    runner.fitness_plots.print_best_results()
 
 def experiment1():
     """
@@ -519,7 +520,7 @@ def experiment16():
                                                 use_warm_start= True, mutation_rate=0.1)
     runner.fitness_plots.show()
 
-def experiment18():
+def experiment17():
     """
     Shows a heatmap for different `num_children` and `population_size` with fitness as the metric
     """
@@ -529,8 +530,8 @@ def experiment18():
     #num_children_lst = [1, 2, 3, 4, 5, 6]
     #population_size_lst = [50, 75, 100, 125, 150, 175, 200, 225, 250]
 
-    num_children_lst = list(range(1, 7))
-    population_size_lst = list(range(25, 250, 25))
+    num_children_lst = list(range(1, 4))
+    population_size_lst = list(range(100, 2000, 100))
 
     runner = CirclesInASquare(circles, plot_sols=False)
 
@@ -592,7 +593,29 @@ def experiment18():
 
     plt.show()
 
+def experiment18():
+    """
+    Putting it all together
+    """
+    circles = 10
+    runner = CirclesInASquare(circles, plot_sols=False, save_sols=True, number_of_runs=20)
+    for n_circles in [11, 13, 17, 19]:
+        runner.n_circles = n_circles
+        runner.fitness_plots.set_subplot(f"Number Of Circles = {str(n_circles)}", hline=runner.get_target())
+
+        runner.fitness_plots.set_line("Baseline")
+        runner.run_evolution_strategies(generations=10000000, num_children=2, max_age=0, population_size=425,
+                                        strategy=Strategy.SINGLE_VARIANCE,
+                                        use_warm_start = False, mutation_rate=1)
+
+        runner.fitness_plots.set_line("All Improvements")
+        runner.run_evolution_strategies(generations=10000000, num_children=2, max_age=10000000, population_size=425,
+                                        strategy=Strategy.SINGLE_VARIANCE,
+                                        forces_config=ForcesConfig(force_strength=0.01, mutation_rate=1, strategy=ForcesConfig.Strategy.MULTIPLE_FORCE_SCALES),
+                                        use_warm_start= True, mutation_rate=0)
+    runner.fitness_plots.show()
+
 if __name__ == "__main__":
     # NOTE: locally create an empty "results" folder in the root of the repo
-    experiment18()
+    fitness_plots_from_backup()
     #main()
